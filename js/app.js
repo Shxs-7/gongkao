@@ -93,49 +93,68 @@ function refreshDailyArticle() {
   var genBtn = document.getElementById('btn-generate-daily');
 
   if (article) {
-    // 有今天的文章 → 显示
     emptyEl.style.display = 'none';
     cardEl.style.display = 'block';
     genBtn.style.display = 'none';
     document.getElementById('daily-title').textContent = article.title;
+
+    // 来源信息
+    var srcEl = document.getElementById('daily-source');
+    if (article.source) {
+      srcEl.style.display = 'block';
+      srcEl.textContent = '来源：' + article.source;
+    } else {
+      srcEl.style.display = 'none';
+    }
+
     document.getElementById('daily-content').textContent = article.content;
+
+    // 原文链接
+    var linkEl = document.getElementById('daily-link');
+    if (article.sourceUrl) {
+      linkEl.style.display = 'inline-flex';
+      linkEl.href = article.sourceUrl;
+    } else {
+      linkEl.style.display = 'none';
+    }
   } else {
-    // 没有 → 显示生成按钮
     emptyEl.style.display = 'block';
     cardEl.style.display = 'none';
     genBtn.style.display = 'block';
   }
 }
 
-// 生成每日时评按钮
+// 获取每日时评按钮（优先人民网 RSS，有 API Key 时 AI 兜底）
 document.getElementById('btn-generate-daily').addEventListener('click', function () {
-  if (!getApiKey()) {
-    showToast('请先去「我的」页面配置 API Key');
-    return;
-  }
   var btn = document.getElementById('btn-generate-daily');
-  btn.textContent = '⏳ 正在生成...';
+  btn.textContent = '⏳ 正在获取...';
   btn.disabled = true;
 
-  generateDailyArticle(
-    function onStart() {},
-    function onDone(err, article) {
-      btn.textContent = '🤖 生成今日时评';
-      btn.disabled = false;
-      if (err) {
-        showToast(getAiErrorMessage(err));
+  loadDailyArticle(function (err, article) {
+    btn.textContent = '🤖 获取今日时评';
+    btn.disabled = false;
+    if (err) {
+      if (err.message === 'NO_API_KEY' || err.message === 'FETCH_ERROR') {
+        if (!getApiKey()) {
+          showToast('获取失败，请配置 API Key 后重试');
+        } else {
+          showToast('人民网获取失败，请稍后重试');
+        }
       } else {
-        refreshDailyArticle();
+        showToast(getAiErrorMessage(err));
       }
+    } else {
+      refreshDailyArticle();
+      showToast(article.sourceUrl ? '已获取人民网评论' : '已生成今日时评');
     }
-  );
+  });
 });
 
 // 存入金句按钮
 document.getElementById('btn-save-daily').addEventListener('click', function () {
   var article = getDailyArticle();
   if (!article) return;
-  var prefill = { text: article.title + '\n\n' + article.content, source: '每日时评', usage: '申论写作参考' };
+  var prefill = { text: article.title + '\n\n' + article.content, source: article.source || '每日时评', usage: '申论写作参考' };
   showPrefillForm('quotes', prefill);
 });
 
