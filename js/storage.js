@@ -6,12 +6,13 @@
 
 /* === 存储键名常量 === */
 var STORAGE_KEYS = {
-  idioms:     'gka_idioms',      // 成语
-  knowledge:  'gka_knowledge',   // 常识
-  words:      'gka_words',       // 实词
-  quotes:     'gka_quotes',      // 金句
-  settings:   'gka_settings',    // 用户设置
-  chatHistory:'gka_chat_history' // AI 对话历史
+  idioms:      'gka_idioms',       // 成语
+  knowledge:   'gka_knowledge',    // 常识
+  words:       'gka_words',        // 实词
+  quotes:      'gka_quotes',       // 金句
+  settings:    'gka_settings',     // 用户设置
+  chatHistory: 'gka_chat_history', // AI 对话历史
+  dailyArticle:'gka_daily_article' // 每日时评
 };
 
 /* === 模块名称映射 === */
@@ -379,4 +380,34 @@ function addChatMessage(role, content) {
 // 清空对话历史
 function clearChatHistory() {
   localStorage.removeItem(STORAGE_KEYS.chatHistory);
+}
+
+/* ==============================================
+   每日时评
+   ============================================== */
+
+// 读取每日时评，没有则返回 null
+function getDailyArticle() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEYS.dailyArticle);
+    if (!raw) return null;
+    var article = JSON.parse(raw);
+    // 不是今天的就过期
+    if (article.date !== getTodayDate()) return null;
+    return article;
+  } catch (e) {
+    return null;
+  }
+}
+
+// 保存每日时评
+function saveDailyArticle(title, content) {
+  var article = {
+    date: getTodayDate(),
+    title: title,
+    content: content,
+    generatedAt: new Date().toISOString()
+  };
+  localStorage.setItem(STORAGE_KEYS.dailyArticle, JSON.stringify(article));
+  return article;
 }

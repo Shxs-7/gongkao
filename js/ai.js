@@ -268,3 +268,78 @@ function saveAiAnswerToModule(content) {
     showPrefillForm(module, prefill);
   });
 }
+
+/* ==============================================
+   每日时评生成
+   ============================================== */
+
+// 每日时评的 AI 提示词
+var DAILY_ARTICLE_PROMPT =
+  '请以"时事评论员"的身份，写一篇简短的评论文章，用于公务员考试申论备考。\n' +
+  '\n' +
+  '要求：\n' +
+  '1. 围绕一个当下的社会热点或政策话题（如民生保障、科技创新、乡村振兴、生态环保、基层治理等）\n' +
+  '2. 字数控制在400-600字\n' +
+  '3. 结构清晰：标题 + 开篇引出话题 + 分析问题/现象 + 提出观点/对策 + 总结升华\n' +
+  '4. 语言规范、有深度，适合申论写作参考\n' +
+  '5. 标题用【】括起来放在最前面\n' +
+  '\n' +
+  '格式示例：\n' +
+  '【以科技创新赋能乡村振兴】\n' +
+  '（正文...）';
+
+// 生成每日时评
+// onStart: 开始回调
+// onDone: 完成回调 (error, {title, content})
+function generateDailyArticle(onStart, onDone) {
+  var apiKey = getApiKey();
+  if (!apiKey) {
+    if (onDone) onDone(new Error('NO_API_KEY'), null);
+    return;
+  }
+
+  if (onStart) onStart();
+
+  var messages = [
+    { role: 'system', content: DAILY_ARTICLE_PROMPT },
+    { role: 'user', content: '请随机选择一个当下热点话题，生成一篇申论备考评论文章。' }
+  ];
+
+  fetch(AI_CONFIG.apiUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + apiKey
+    },
+    body: JSON.stringify({
+      model: AI_CONFIG.model,
+      messages: messages,
+      max_tokens: 1500,
+      temperature: 0.8,
+      stream: false
+    })
+  })
+  .then(function (response) {
+    if (!response.ok) {
+      if (response.status === 401) throw new Error('API_KEY_INVALID');
+      else throw new Error('SERVER_ERROR');
+    }
+    return response.json();
+  })
+  .then(function (data) {
+    var raw = data.choices && data.choices[0] && data.choices[0].message
+      ? data.choices[0].message.content
+      : '';
+
+    // 尝试从回复中提取标题（【xxx】格式）
+    var titleMatch = raw.match(/【(.+?)】/);
+    var title = titleMatch ? titleMatch[1] : '今日时评';
+    var content = raw.replace(/【.+?】\s*/, '').trim();
+
+    var article = saveDailyArticle(title, content);
+    if (onDone) onDone(null, article);
+  })
+  .catch(function (err) {
+    if (onDone) onDone(err, null);
+  });
+}

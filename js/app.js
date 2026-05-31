@@ -78,9 +78,66 @@ function refreshHomeStats() {
   // 今日复习列表
   renderTodayReviewList();
 
+  // 每日时评
+  refreshDailyArticle();
+
   // 备份提醒
   checkBackupReminder();
 }
+
+// 刷新每日时评显示
+function refreshDailyArticle() {
+  var article = getDailyArticle();
+  var emptyEl = document.getElementById('daily-empty');
+  var cardEl = document.getElementById('daily-article-card');
+  var genBtn = document.getElementById('btn-generate-daily');
+
+  if (article) {
+    // 有今天的文章 → 显示
+    emptyEl.style.display = 'none';
+    cardEl.style.display = 'block';
+    genBtn.style.display = 'none';
+    document.getElementById('daily-title').textContent = article.title;
+    document.getElementById('daily-content').textContent = article.content;
+  } else {
+    // 没有 → 显示生成按钮
+    emptyEl.style.display = 'block';
+    cardEl.style.display = 'none';
+    genBtn.style.display = 'block';
+  }
+}
+
+// 生成每日时评按钮
+document.getElementById('btn-generate-daily').addEventListener('click', function () {
+  if (!getApiKey()) {
+    showToast('请先去「我的」页面配置 API Key');
+    return;
+  }
+  var btn = document.getElementById('btn-generate-daily');
+  btn.textContent = '⏳ 正在生成...';
+  btn.disabled = true;
+
+  generateDailyArticle(
+    function onStart() {},
+    function onDone(err, article) {
+      btn.textContent = '🤖 生成今日时评';
+      btn.disabled = false;
+      if (err) {
+        showToast(getAiErrorMessage(err));
+      } else {
+        refreshDailyArticle();
+      }
+    }
+  );
+});
+
+// 存入金句按钮
+document.getElementById('btn-save-daily').addEventListener('click', function () {
+  var article = getDailyArticle();
+  if (!article) return;
+  var prefill = { text: article.title + '\n\n' + article.content, source: '每日时评', usage: '申论写作参考' };
+  showPrefillForm('quotes', prefill);
+});
 
 // 检测备份提醒
 function checkBackupReminder() {

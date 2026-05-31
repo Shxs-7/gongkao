@@ -334,6 +334,39 @@ a {
   margin-bottom: 10px;
 }
 
+/* === 每日时评 === */
+.daily-article-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-card);
+}
+
+.daily-article-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.daily-article-content {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.8;
+  white-space: pre-wrap;
+  margin-bottom: 12px;
+}
+
+.daily-article-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
 /* === 复习列表 === */
 .review-list {
   display: flex;

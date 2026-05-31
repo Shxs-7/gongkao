@@ -59,6 +59,20 @@
       </button>
 
       <!-- 今日复习列表 -->
+      <!-- 每日时评 -->
+      <div class="section-header">📰 每日时评</div>
+      <div id="daily-article-area" class="daily-article-area">
+        <div class="empty-hint" id="daily-empty">点击下方按钮，AI 为你生成今日申论评论文章</div>
+        <div id="daily-article-card" class="daily-article-card" style="display:none;">
+          <div class="daily-article-title" id="daily-title"></div>
+          <div class="daily-article-content" id="daily-content"></div>
+          <div class="daily-article-actions">
+            <button class="btn btn-sm btn-outline" id="btn-save-daily">📥 存入金句</button>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block" id="btn-generate-daily" style="margin-bottom:16px;">🤖 生成今日时评</button>
+
       <div class="section-header">📅 今日复习</div>
       <div id="today-review-list" class="review-list">
         <div class="empty-hint">暂无待复习内容</div>
