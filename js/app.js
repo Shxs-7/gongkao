@@ -87,7 +87,14 @@ function refreshHomeStats() {
 
 // 刷新每日时评显示
 function refreshDailyArticle() {
-  // 优先从服务器文件读取（GitHub Actions 每日更新）
+  // 先看 localStorage 有没有今天的
+  var cached = getDailyArticle();
+  if (cached) {
+    showDailyArticle(cached);
+    return;
+  }
+
+  // 没有缓存 → 尝试服务器文件
   fetch('/daily-article.json?' + Date.now())
     .then(function (res) {
       if (!res.ok) throw new Error('no file');
@@ -95,21 +102,14 @@ function refreshDailyArticle() {
     })
     .then(function (serverArticle) {
       if (serverArticle.date === getTodayDate()) {
-        // 服务器文件是今天的 → 用服务器的
         saveDailyArticle(serverArticle.title, serverArticle.content, serverArticle.sourceUrl, serverArticle.source);
         showDailyArticle(serverArticle);
-        return;
-      }
-      throw new Error('expired');
-    })
-    .catch(function () {
-      // 服务器文件不可用 → 用 localStorage 缓存的
-      var cached = getDailyArticle();
-      if (cached) {
-        showDailyArticle(cached);
       } else {
         showDailyEmpty();
       }
+    })
+    .catch(function () {
+      showDailyEmpty();
     });
 }
 
@@ -144,37 +144,20 @@ function showDailyEmpty() {
   document.getElementById('btn-generate-daily').style.display = 'block';
 }
 
-// 获取每日时评按钮
+// 刷新每日时评按钮
 document.getElementById('btn-generate-daily').addEventListener('click', function () {
   var btn = document.getElementById('btn-generate-daily');
-  btn.textContent = '⏳ 正在获取...';
+  btn.textContent = '⏳ 正在从人民网获取...';
   btn.disabled = true;
 
-  // 先尝试本地文件（GitHub Actions 每日更新）
-  loadDailyArticle(function (err, article) {
-    btn.textContent = '刷新今日时评';
+  fetchDailyArticleFromRSS(function (err, article) {
+    btn.textContent = '🔄 刷新今日时评（人民网）';
     btn.disabled = false;
     if (err) {
-      if (getApiKey()) {
-        // 本地文件没有，尝试 AI 生成
-        btn.textContent = '⏳ AI 生成中...';
-        btn.disabled = true;
-        generateDailyArticle(null, function (aiErr, aiArticle) {
-          btn.textContent = '刷新今日时评';
-          btn.disabled = false;
-          if (aiErr) {
-            showToast(getAiErrorMessage(aiErr));
-          } else {
-            refreshDailyArticle();
-            showToast('已生成今日时评');
-          }
-        });
-      } else {
-        showToast('今天的时评还没更新，请稍后再试');
-      }
+      showToast('获取失败，请稍后重试');
     } else {
-      refreshDailyArticle();
-      showToast('已加载今日时评');
+      showDailyArticle(article);
+      showToast('已更新：' + article.title.slice(0, 20) + '...');
     }
   });
 });

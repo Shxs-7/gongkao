@@ -273,31 +273,54 @@ function saveAiAnswerToModule(content) {
    每日时评
    ============================================== */
 
-// 从网站自己的 daily-article.json 读取（同域名，不跨域）
-// 这个文件由 GitHub Actions 每天自动更新
+// 从 rss2json API 直接拉取人民网最新评论（浏览器端，有 CORS 支持）
+var PEOPLE_RSS_URL = 'http://www.people.com.cn/rss/opinion.xml';
+var RSS2JSON_API  = 'https://api.rss2json.com/v1/api.json?rss_url=';
+
 function fetchDailyArticleFromRSS(onDone) {
-  fetch('/daily-article.json?' + Date.now())
+  var apiUrl = RSS2JSON_API + encodeURIComponent(PEOPLE_RSS_URL);
+
+  fetch(apiUrl)
     .then(function (res) {
-      if (!res.ok) throw new Error('NOT_FOUND');
+      if (!res.ok) throw new Error('API_ERROR');
       return res.json();
     })
     .then(function (data) {
-      if (data && data.title) {
-        // 检查是否是今天的
-        var today = getTodayDate();
-        if (data.date === today) {
-          var article = saveDailyArticle(data.title, data.content, data.sourceUrl, data.source);
-          onDone(null, article);
-        } else {
-          // 文件存在但过期了
-          onDone(new Error('EXPIRED'), null);
-        }
+      if (data.items && data.items.length > 0) {
+        var latest = data.items[0];
+        var content = (latest.content || latest.description || '')
+          .replace(/<[^>]+>/g, '')
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .trim();
+
+        var article = saveDailyArticle(latest.title, content, latest.link, '人民网');
+        onDone(null, article);
       } else {
         onDone(new Error('NO_ARTICLE'), null);
       }
     })
-    .catch(function (e) {
-      onDone(new Error('FETCH_ERROR'), null);
+    .catch(function () {
+      // rss2json 失败，尝试本地缓存文件
+      fetch('/daily-article.json?' + Date.now())
+        .then(function (res) {
+          if (!res.ok) throw new Error('NOT_FOUND');
+          return res.json();
+        })
+        .then(function (data) {
+          if (data.date === getTodayDate()) {
+            var article = saveDailyArticle(data.title, data.content, data.sourceUrl, data.source);
+            onDone(null, article);
+          } else {
+            onDone(new Error('EXPIRED'), null);
+          }
+        })
+        .catch(function () {
+          onDone(new Error('FETCH_ERROR'), null);
+        });
     });
 }
 
