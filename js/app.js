@@ -87,41 +87,61 @@ function refreshHomeStats() {
 
 // 刷新每日时评显示
 function refreshDailyArticle() {
-  var article = getDailyArticle();
-  var emptyEl = document.getElementById('daily-empty');
-  var cardEl = document.getElementById('daily-article-card');
-  var genBtn = document.getElementById('btn-generate-daily');
+  // 优先从服务器文件读取（GitHub Actions 每日更新）
+  fetch('/daily-article.json?' + Date.now())
+    .then(function (res) {
+      if (!res.ok) throw new Error('no file');
+      return res.json();
+    })
+    .then(function (serverArticle) {
+      if (serverArticle.date === getTodayDate()) {
+        // 服务器文件是今天的 → 用服务器的
+        saveDailyArticle(serverArticle.title, serverArticle.content, serverArticle.sourceUrl, serverArticle.source);
+        showDailyArticle(serverArticle);
+        return;
+      }
+      throw new Error('expired');
+    })
+    .catch(function () {
+      // 服务器文件不可用 → 用 localStorage 缓存的
+      var cached = getDailyArticle();
+      if (cached) {
+        showDailyArticle(cached);
+      } else {
+        showDailyEmpty();
+      }
+    });
+}
 
-  if (article) {
-    emptyEl.style.display = 'none';
-    cardEl.style.display = 'block';
-    genBtn.style.display = 'none';
-    document.getElementById('daily-title').textContent = article.title;
+function showDailyArticle(article) {
+  document.getElementById('daily-empty').style.display = 'none';
+  document.getElementById('daily-article-card').style.display = 'block';
+  document.getElementById('btn-generate-daily').style.display = 'none';
+  document.getElementById('daily-title').textContent = article.title;
 
-    // 来源信息
-    var srcEl = document.getElementById('daily-source');
-    if (article.source) {
-      srcEl.style.display = 'block';
-      srcEl.textContent = '来源：' + article.source;
-    } else {
-      srcEl.style.display = 'none';
-    }
-
-    document.getElementById('daily-content').textContent = article.content;
-
-    // 原文链接
-    var linkEl = document.getElementById('daily-link');
-    if (article.sourceUrl) {
-      linkEl.style.display = 'inline-flex';
-      linkEl.href = article.sourceUrl;
-    } else {
-      linkEl.style.display = 'none';
-    }
+  var srcEl = document.getElementById('daily-source');
+  if (article.source) {
+    srcEl.style.display = 'block';
+    srcEl.textContent = '来源：' + article.source;
   } else {
-    emptyEl.style.display = 'block';
-    cardEl.style.display = 'none';
-    genBtn.style.display = 'block';
+    srcEl.style.display = 'none';
   }
+
+  document.getElementById('daily-content').textContent = article.content;
+
+  var linkEl = document.getElementById('daily-link');
+  if (article.sourceUrl) {
+    linkEl.style.display = 'inline-flex';
+    linkEl.href = article.sourceUrl;
+  } else {
+    linkEl.style.display = 'none';
+  }
+}
+
+function showDailyEmpty() {
+  document.getElementById('daily-empty').style.display = 'block';
+  document.getElementById('daily-article-card').style.display = 'none';
+  document.getElementById('btn-generate-daily').style.display = 'block';
 }
 
 // 获取每日时评按钮
