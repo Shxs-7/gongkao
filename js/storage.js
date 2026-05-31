@@ -324,6 +324,24 @@ function saveApiKey(apiKey) {
   saveSettings({ apiKey: apiKey });
 }
 
+// 记录备份时间（导出时调用）
+function recordBackup() {
+  saveSettings({ lastBackupDate: getTodayDate() });
+}
+
+// 获取距离上次备份的天数，-1 表示从未备份
+function getDaysSinceLastBackup() {
+  var settings = getSettings();
+  var lastDate = settings.lastBackupDate;
+  if (!lastDate) return -1;
+
+  var today = getTodayDate();
+  var last = new Date(lastDate);
+  var now = new Date(today);
+  var diffMs = now - last;
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+}
+
 /* ==============================================
    对话历史管理
    ============================================== */

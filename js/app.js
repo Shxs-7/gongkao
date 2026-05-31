@@ -77,6 +77,36 @@ function refreshHomeStats() {
 
   // 今日复习列表
   renderTodayReviewList();
+
+  // 备份提醒
+  checkBackupReminder();
+}
+
+// 检测备份提醒
+function checkBackupReminder() {
+  var banner = document.getElementById('backup-reminder');
+  if (!banner) return;
+
+  var days = getDaysSinceLastBackup();
+  if (days === -1) {
+    // 从未备份过
+    banner.style.display = 'block';
+    banner.innerHTML = '⚠️ 你还没有备份过数据，建议<a id="go-backup" style="color:var(--primary);font-weight:600;">立即备份</a>';
+  } else if (days >= 7) {
+    // 超过7天
+    banner.style.display = 'block';
+    banner.innerHTML = '⚠️ 已 ' + days + ' 天未备份，建议<a id="go-backup" style="color:var(--primary);font-weight:600;">立即备份</a>';
+  } else {
+    banner.style.display = 'none';
+  }
+
+  // 点击跳转到设置页
+  var link = document.getElementById('go-backup');
+  if (link) {
+    link.addEventListener('click', function () {
+      switchPage('settings');
+    });
+  }
 }
 
 /* ==============================================
@@ -361,6 +391,7 @@ document.getElementById('btn-export').addEventListener('click', function () {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+  recordBackup(); // 记录本次备份时间
   showToast('数据已导出');
 });
 
