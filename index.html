@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>公考积累宝</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ========== 首页 ========== -->
+  <section id="page-home" class="page active">
+    <div class="page-content">
+
+      <!-- 今日复习统计 -->
+      <div class="review-summary">
+        <div class="summary-card">
+          <div class="summary-number" id="today-count">0</div>
+          <div class="summary-label">今日待复习</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-number" id="total-count">0</div>
+          <div class="summary-label">总积累条数</div>
+        </div>
+      </div>
+
+      <!-- 各模块快捷入口 -->
+      <div class="quick-stats">
+        <div class="stat-item" data-module="idioms">
+          <span class="stat-icon">📝</span>
+          <span class="stat-name">成语</span>
+          <span class="stat-num" id="stat-idioms">0</span>
+        </div>
+        <div class="stat-item" data-module="knowledge">
+          <span class="stat-icon">📚</span>
+          <span class="stat-name">常识</span>
+          <span class="stat-num" id="stat-knowledge">0</span>
+        </div>
+        <div class="stat-item" data-module="words">
+          <span class="stat-icon">🔤</span>
+          <span class="stat-name">实词</span>
+          <span class="stat-num" id="stat-words">0</span>
+        </div>
+        <div class="stat-item" data-module="quotes">
+          <span class="stat-icon">⭐</span>
+          <span class="stat-name">金句</span>
+          <span class="stat-num" id="stat-quotes">0</span>
+        </div>
+      </div>
+
+      <!-- 人民网搜索按钮 -->
+      <button class="btn-people-search" onclick="window.open('http://search.people.cn/', '_blank')">
+        🔍 人民网搜索
+      </button>
+
+      <!-- 今日复习列表 -->
+      <div class="section-header">📅 今日复习</div>
+      <div id="today-review-list" class="review-list">
+        <div class="empty-hint">暂无待复习内容</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========== 积累页 ========== -->
+  <section id="page-accumulate" class="page">
+    <div class="page-content">
+
+      <!-- 子模块标签栏 -->
+      <div class="sub-tabs">
+        <button class="sub-tab active" data-sub="idioms">成语</button>
+        <button class="sub-tab" data-sub="knowledge">常识</button>
+        <button class="sub-tab" data-sub="words">实词</button>
+        <button class="sub-tab" data-sub="quotes">金句</button>
+      </div>
+
+      <!-- 搜索框 -->
+      <div class="search-bar">
+        <input type="text" id="search-input" placeholder="搜索...">
+      </div>
+
+      <!-- 列表区域 -->
+      <div id="accumulate-list" class="card-list">
+        <div class="empty-hint">还没有内容，点击下方 + 添加</div>
+      </div>
+
+      <!-- 添加按钮（悬浮） -->
+      <button class="fab" id="btn-add-item">+</button>
+
+    </div>
+  </section>
+
+  <!-- ========== AI 问答页 ========== -->
+  <section id="page-ai" class="page">
+    <div class="page-content ai-page">
+
+      <!-- 聊天区域 -->
+      <div id="chat-area" class="chat-area">
+        <div class="chat-welcome">
+          <div class="welcome-icon">🤖</div>
+          <div class="welcome-text">你好！我是公考辅导助手</div>
+          <div class="welcome-sub">可以问我成语辨析、常识知识、实词用法、申论素材等问题</div>
+        </div>
+      </div>
+
+      <!-- 输入区域 -->
+      <div class="chat-input-bar">
+        <input type="text" id="chat-input" placeholder="输入你的公考问题...">
+        <button id="btn-send" class="btn-send">发送</button>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========== 复习页 ========== -->
+  <section id="page-review" class="page">
+    <div class="page-content">
+
+      <div class="review-card" id="review-card">
+        <div class="review-card-front">
+          <div class="review-module-tag" id="review-module-tag">成语</div>
+          <div class="review-question" id="review-question">点击下方按钮开始复习</div>
+        </div>
+        <div class="review-card-back" id="review-answer" style="display:none;">
+          <div class="review-answer-label">📖 答案</div>
+          <div class="review-answer-content" id="review-answer-content"></div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="btn-show-answer" style="display:none;">显示答案</button>
+
+      <div class="rating-buttons" id="rating-buttons" style="display:none;">
+        <div class="rating-label">掌握程度</div>
+        <div class="rating-row">
+          <button class="rating-btn" data-rating="1">😰<br>忘了</button>
+          <button class="rating-btn" data-rating="2">🤔<br>模糊</button>
+          <button class="rating-btn" data-rating="3">😊<br>记得</button>
+          <button class="rating-btn" data-rating="4">💪<br>很熟</button>
+        </div>
+      </div>
+
+      <div class="empty-hint" id="review-empty">暂无待复习内容，去积累页添加一些吧</div>
+
+    </div>
+  </section>
+
+  <!-- ========== 我的页面 ========== -->
+  <section id="page-settings" class="page">
+    <div class="page-content">
+
+      <!-- API Key 配置 -->
+      <div class="settings-group">
+        <div class="settings-group-title">AI 配置</div>
+        <div class="settings-item">
+          <label>DeepSeek API Key</label>
+          <input type="password" id="setting-apikey" placeholder="输入你的 API Key">
+          <button class="btn btn-sm btn-primary" id="btn-save-apikey">保存</button>
+        </div>
+      </div>
+
+      <!-- 数据管理 -->
+      <div class="settings-group">
+        <div class="settings-group-title">数据管理</div>
+        <div class="settings-item">
+          <button class="btn btn-outline btn-block" id="btn-export">📥 导出数据备份</button>
+        </div>
+        <div class="settings-item">
+          <button class="btn btn-outline btn-block" id="btn-import">📤 导入数据恢复</button>
+          <input type="file" id="import-file" accept=".json" style="display:none;">
+        </div>
+        <div class="settings-item">
+          <button class="btn btn-danger btn-block" id="btn-clear">🗑 清空全部数据</button>
+        </div>
+      </div>
+
+      <!-- 关于 -->
+      <div class="settings-group">
+        <div class="settings-group-title">关于</div>
+        <div class="settings-item about-text">
+          公考积累宝 v1.0<br>
+          数据仅存储在您的手机浏览器中<br>
+          请定期导出备份
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========== 底部导航栏 ========== -->
+  <nav id="bottom-nav">
+    <button class="nav-item active" data-page="home">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">首页</span>
+    </button>
+    <button class="nav-item" data-page="accumulate">
+      <span class="nav-icon">📚</span>
+      <span class="nav-label">积累</span>
+    </button>
+    <button class="nav-item" data-page="ai">
+      <span class="nav-icon">🤖</span>
+      <span class="nav-label">AI问答</span>
+    </button>
+    <button class="nav-item" data-page="review">
+      <span class="nav-icon">📝</span>
+      <span class="nav-label">复习</span>
+    </button>
+    <button class="nav-item" data-page="settings">
+      <span class="nav-icon">⚙️</span>
+      <span class="nav-label">我的</span>
+    </button>
+  </nav>
+
+</div><!-- /#app -->
+
+<!-- 删除确认弹窗模板 -->
+<div id="modal-overlay" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <div class="modal-msg" id="modal-msg">确定要删除吗？</div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" id="modal-cancel">取消</button>
+      <button class="btn btn-danger" id="modal-confirm">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast 提示 -->
+<div id="toast" class="toast" style="display:none;"></div>
+
+<script src="js/storage.js"></script>
+<script src="js/review.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
