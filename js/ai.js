@@ -273,42 +273,30 @@ function saveAiAnswerToModule(content) {
    每日时评
    ============================================== */
 
-// 从人民网 RSS 获取最新评论文章
-var PEOPLE_RSS_URL = 'http://www.people.com.cn/rss/opinion.xml';
-var RSS2JSON_API = 'https://api.rss2json.com/v1/api.json?rss_url=';
-
-// 抓取人民网最新评论
+// 从网站自己的 daily-article.json 读取（同域名，不跨域）
+// 这个文件由 GitHub Actions 每天自动更新
 function fetchDailyArticleFromRSS(onDone) {
-  var apiUrl = RSS2JSON_API + encodeURIComponent(PEOPLE_RSS_URL);
-
-  fetch(apiUrl)
-    .then(function (res) { return res.json(); })
+  fetch('/daily-article.json?' + Date.now())
+    .then(function (res) {
+      if (!res.ok) throw new Error('NOT_FOUND');
+      return res.json();
+    })
     .then(function (data) {
-      if (data.items && data.items.length > 0) {
-        // 取最新一篇
-        var latest = data.items[0];
-        // 清理 HTML 标签
-        var content = (latest.content || latest.description || '')
-          .replace(/<[^>]+>/g, '')
-          .replace(/&nbsp;/g, ' ')
-          .replace(/&amp;/g, '&')
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/&quot;/g, '"')
-          .trim();
-
-        var article = saveDailyArticle(
-          latest.title,
-          content,
-          latest.link,
-          '人民网'
-        );
-        onDone(null, article);
+      if (data && data.title) {
+        // 检查是否是今天的
+        var today = getTodayDate();
+        if (data.date === today) {
+          var article = saveDailyArticle(data.title, data.content, data.sourceUrl, data.source);
+          onDone(null, article);
+        } else {
+          // 文件存在但过期了
+          onDone(new Error('EXPIRED'), null);
+        }
       } else {
         onDone(new Error('NO_ARTICLE'), null);
       }
     })
-    .catch(function () {
+    .catch(function (e) {
       onDone(new Error('FETCH_ERROR'), null);
     });
 }

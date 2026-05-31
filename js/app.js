@@ -124,28 +124,37 @@ function refreshDailyArticle() {
   }
 }
 
-// 获取每日时评按钮（优先人民网 RSS，有 API Key 时 AI 兜底）
+// 获取每日时评按钮
 document.getElementById('btn-generate-daily').addEventListener('click', function () {
   var btn = document.getElementById('btn-generate-daily');
   btn.textContent = '⏳ 正在获取...';
   btn.disabled = true;
 
+  // 先尝试本地文件（GitHub Actions 每日更新）
   loadDailyArticle(function (err, article) {
-    btn.textContent = '🤖 获取今日时评';
+    btn.textContent = '刷新今日时评';
     btn.disabled = false;
     if (err) {
-      if (err.message === 'NO_API_KEY' || err.message === 'FETCH_ERROR') {
-        if (!getApiKey()) {
-          showToast('获取失败，请配置 API Key 后重试');
-        } else {
-          showToast('人民网获取失败，请稍后重试');
-        }
+      if (getApiKey()) {
+        // 本地文件没有，尝试 AI 生成
+        btn.textContent = '⏳ AI 生成中...';
+        btn.disabled = true;
+        generateDailyArticle(null, function (aiErr, aiArticle) {
+          btn.textContent = '刷新今日时评';
+          btn.disabled = false;
+          if (aiErr) {
+            showToast(getAiErrorMessage(aiErr));
+          } else {
+            refreshDailyArticle();
+            showToast('已生成今日时评');
+          }
+        });
       } else {
-        showToast(getAiErrorMessage(err));
+        showToast('今天的时评还没更新，请稍后再试');
       }
     } else {
       refreshDailyArticle();
-      showToast(article.sourceUrl ? '已获取人民网评论' : '已生成今日时评');
+      showToast('已加载今日时评');
     }
   });
 });
