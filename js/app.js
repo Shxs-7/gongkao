@@ -326,6 +326,20 @@ function renderTodayReviewList() {
 function initSettings() {
   var settings = getSettings();
   document.getElementById('setting-apikey').value = settings.apiKey || '';
+
+  // 显示存储占用
+  var bytes = getStorageSize();
+  document.getElementById('storage-size').textContent = formatStorageSize(bytes);
+
+  // 存储进度条（以 5MB 为上限）
+  var limitMB = 5;
+  var pct = Math.min(100, (bytes / (limitMB * 1024 * 1024)) * 100);
+  var bar = document.getElementById('storage-bar');
+  bar.style.width = pct + '%';
+  // 颜色：<50% 蓝色，50-80% 黄色，>80% 红色
+  if (pct > 80) bar.style.background = '#E74C3C';
+  else if (pct > 50) bar.style.background = '#F39C12';
+  else bar.style.background = 'var(--primary)';
 }
 
 // 保存 API Key

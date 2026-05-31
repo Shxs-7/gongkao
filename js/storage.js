@@ -176,6 +176,26 @@ function getTotalCount() {
   return stats.idioms + stats.knowledge + stats.words + stats.quotes;
 }
 
+// 计算 localStorage 总占用大小（字节）
+function getStorageSize() {
+  var totalBytes = 0;
+  Object.keys(STORAGE_KEYS).forEach(function (mod) {
+    var val = localStorage.getItem(STORAGE_KEYS[mod]);
+    if (val) {
+      // UTF-8 编码的字节数
+      totalBytes += new TextEncoder().encode(val).length;
+    }
+  });
+  return totalBytes;
+}
+
+// 格式化字节为可读大小
+function formatStorageSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
 /* ==============================================
    数据导入导出
    ============================================== */

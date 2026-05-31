@@ -175,6 +175,20 @@
         </div>
       </div>
 
+      <!-- 存储占用 -->
+      <div class="settings-group">
+        <div class="settings-group-title">存储占用</div>
+        <div class="settings-item" style="text-align:center;">
+          <div style="font-size:28px;font-weight:700;color:var(--primary);" id="storage-size">计算中...</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">
+            浏览器上限约 <span id="storage-limit">5~10 MB</span>
+          </div>
+          <div style="margin-top:8px;background:#eee;border-radius:4px;height:6px;overflow:hidden;">
+            <div id="storage-bar" style="height:100%;background:var(--primary);border-radius:4px;width:0%;transition:width 0.3s;"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- 关于 -->
       <div class="settings-group">
         <div class="settings-group-title">关于</div>
