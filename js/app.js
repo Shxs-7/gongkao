@@ -422,6 +422,16 @@ document.getElementById('import-file').addEventListener('change', function () {
 });
 
 // 清空全部数据
+// 一键导入预置成语
+document.getElementById('btn-preset-idioms').addEventListener('click', function () {
+  showConfirm('将导入 25 条近5年高频成语（重复的会自动跳过），确定吗？', function () {
+    var count = importPresetIdioms();
+    showToast('已导入 ' + count + ' 条成语' + (count === 0 ? '（都已存在）' : ''));
+    refreshHomeStats();
+  }, '确认导入');
+});
+
+// 清空全部数据
 document.getElementById('btn-clear').addEventListener('click', function () {
   showConfirm('⚠️ 确定要清空全部数据吗？\n包括所有成语、常识、实词、金句、对话记录。\n此操作不可恢复！', function () {
     clearAll();
