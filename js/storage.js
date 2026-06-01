@@ -79,6 +79,13 @@ function addItem(module, data) {
   var key = STORAGE_KEYS[module];
   if (!key) return null;
 
+  // 查重
+  var dupField = getDedupField(module);
+  if (dupField && data[dupField]) {
+    var dup = findDuplicate(module, dupField, data[dupField]);
+    if (dup) return { _duplicate: true, _existing: dup };
+  }
+
   var base = createBaseFields();
   base.id = generateId(module === 'knowledge' ? 'knowledge' :
               module === 'idioms' ? 'idiom' :
@@ -175,6 +182,30 @@ function getStats() {
 function getTotalCount() {
   var stats = getStats();
   return stats.idioms + stats.knowledge + stats.words + stats.quotes;
+}
+
+// 获取各模块的去重字段
+function getDedupField(module) {
+  switch (module) {
+    case 'idioms':    return 'text';
+    case 'knowledge': return 'title';
+    case 'words':     return 'word';
+    case 'quotes':    return 'text';
+    default:          return null;
+  }
+}
+
+// 查找重复项（按字段值匹配，忽略大小写和前后空格）
+function findDuplicate(module, field, value, excludeId) {
+  var list = getAll(module);
+  var v = value.trim().toLowerCase();
+  for (var i = 0; i < list.length; i++) {
+    var itemVal = (list[i][field] || '').trim().toLowerCase();
+    if (itemVal === v && list[i].id !== excludeId) {
+      return list[i];
+    }
+  }
+  return null;
 }
 
 // 计算 localStorage 总占用大小（字节）

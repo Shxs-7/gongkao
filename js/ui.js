@@ -216,7 +216,11 @@ function showItemForm(module, item) {
       updateItem(module, item.id, data);
       showToast('已更新');
     } else {
-      addItem(module, data);
+      var result = addItem(module, data);
+      if (result && result._duplicate) {
+        showToast(labels.moduleLabel + '「' + data[getDedupField(module)] + '」已存在，请勿重复添加');
+        return; // 不关闭表单，让用户修改
+      }
       showToast('已添加');
     }
 
@@ -417,7 +421,11 @@ function showPrefillForm(module, prefill) {
       return;
     }
 
-    addItem(module, data);
+    var result = addItem(module, data);
+    if (result && result._duplicate) {
+      showToast(labels.moduleLabel + '「' + data[getDedupField(module)] + '」已存在，请勿重复添加');
+      return;
+    }
     showToast('已存入' + labels.moduleLabel);
     closeForm();
     refreshHomeStats();
