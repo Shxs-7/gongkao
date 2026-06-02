@@ -322,7 +322,26 @@ function getSourceById(sourceId) {
   return found.length > 0 ? found[0] : null;
 }
 
-// 从单个来源抓取文章
+// 清理文章正文（去 HTML 标签 + 实体解码）
+function cleanArticleContent(raw) {
+  return (raw || '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&rsquo;/g, "'")
+    .replace(/&lsquo;/g, "'")
+    .replace(/&rdquo;/g, '"')
+    .replace(/&ldquo;/g, '"')
+    .replace(/&mdash;/g, '—')
+    .replace(/&ndash;/g, '–')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+// 从单个来源抓取文章列表（返回前 10 篇）
 function fetchFromSource(source, onDone) {
   var apiUrl = RSS2JSON_API + encodeURIComponent(source.rssUrl);
 
@@ -333,32 +352,23 @@ function fetchFromSource(source, onDone) {
     })
     .then(function (data) {
       if (data.items && data.items.length > 0) {
-        // 取最新一篇
-        var latest = data.items[0];
-        var content = (latest.content || latest.description || '')
-          .replace(/<[^>]+>/g, '')
-          .replace(/&nbsp;/g, ' ')
-          .replace(/&amp;/g, '&')
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/&quot;/g, '"')
-          .replace(/&rsquo;/g, "'")
-          .replace(/&lsquo;/g, "'")
-          .replace(/&rdquo;/g, '"')
-          .replace(/&ldquo;/g, '"')
-          .replace(/&mdash;/g, '—')
-          .replace(/&ndash;/g, '–')
-          .replace(/\n{3,}/g, '\n\n')
-          .trim();
+        // 取前 10 篇，清理内容
+        var articles = data.items.slice(0, 10).map(function (item) {
+          return {
+            title: item.title || '',
+            content: cleanArticleContent(item.content || item.description || ''),
+            sourceUrl: item.link || '',
+            source: source.sourceName,
+            sourceId: source.id
+          };
+        }).filter(function (a) { return a.title && a.content; }); // 去掉空文章
 
-        var article = saveDailyArticle(
-          latest.title,
-          content,
-          latest.link || '',
-          source.sourceName,
-          source.id
-        );
-        onDone(null, article, source);
+        if (articles.length > 0) {
+          saveDailyArticles(articles, source.sourceName, source.id);
+          onDone(null, articles, source);
+        } else {
+          onDone(new Error('NO_ARTICLE'), null, source);
+        }
       } else {
         onDone(new Error('NO_ARTICLE'), null, source);
       }
@@ -394,8 +404,14 @@ function fetchDailyArticleFromRSS(onDone, onProgress) {
         })
         .then(function (data) {
           if (data.date === getTodayDate()) {
-            var article = saveDailyArticle(data.title, data.content, data.sourceUrl, data.source, data.sourceId || '');
-            onDone(null, article);
+            // 兼容旧格式（单篇文章）
+            if (data.title) {
+              var articles = [{ title: data.title, content: data.content, sourceUrl: data.sourceUrl || '', source: data.source || '', sourceId: data.sourceId || '' }];
+              saveDailyArticles(articles, data.source || '', data.sourceId || '');
+            } else if (data.articles) {
+              saveDailyArticles(data.articles, '', '');
+            }
+            onDone(null, getDailyArticles());
           } else {
             onDone(new Error('EXPIRED'), null);
           }
@@ -409,11 +425,11 @@ function fetchDailyArticleFromRSS(onDone, onProgress) {
     var source = sources[idx];
     if (onProgress) onProgress(source.id, 'fetching');
 
-    fetchFromSource(source, function (err, article, src) {
-      if (!err && article) {
+    fetchFromSource(source, function (err, articles, src) {
+      if (!err && articles && articles.length > 0) {
         // 成功！
         if (onProgress) onProgress(source.id, 'done');
-        onDone(null, article);
+        onDone(null, articles);
       } else {
         // 失败，试下一个
         if (onProgress) onProgress(source.id, 'failed');
@@ -460,23 +476,24 @@ function generateDailyArticle(onStart, onDone) {
   .then(function (data) {
     var raw = data.choices[0].message.content;
     var m = raw.match(/【(.+?)】/);
-    var article = saveDailyArticle(m ? m[1] : '今日时评', raw.replace(/【.+?】\s*/, '').trim(), '', 'AI生成');
-    onDone(null, article);
+    var articles = [{ title: m ? m[1] : '今日时评', content: raw.replace(/【.+?】\s*/, '').trim(), sourceUrl: '', source: 'AI生成', sourceId: 'ai' }];
+    saveDailyArticles(articles, 'AI生成', 'ai');
+    onDone(null, articles);
   })
   .catch(function (err) { onDone(err, null); });
 }
 
 // 获取每日时评（先试 RSS 多源，失败再用 AI 兜底）
 function loadDailyArticle(onDone, onProgress) {
-  fetchDailyArticleFromRSS(function (err, article) {
-    if (!err && article) {
+  fetchDailyArticleFromRSS(function (err, articles) {
+    if (!err && articles && articles.length > 0) {
       // RSS 抓取成功
-      onDone(null, article);
+      onDone(null, articles);
     } else {
       // 全部来源失败，尝试 AI 生成
       if (onProgress) onProgress('', 'ai_fallback');
-      generateDailyArticle(null, function (aiErr, aiArticle) {
-        onDone(aiErr, aiArticle);
+      generateDailyArticle(null, function (aiErr, aiArticles) {
+        onDone(aiErr, aiArticles);
       });
     }
   }, onProgress);

@@ -417,31 +417,131 @@ function clearChatHistory() {
    每日时评
    ============================================== */
 
-// 读取每日时评，没有则返回 null
+// 读取每日时评，没有则返回 null（兼容旧格式）
 function getDailyArticle() {
   try {
     var raw = localStorage.getItem(STORAGE_KEYS.dailyArticle);
     if (!raw) return null;
-    var article = JSON.parse(raw);
+    var data = JSON.parse(raw);
     // 不是今天的就过期
-    if (article.date !== getTodayDate()) return null;
-    return article;
+    if (data.date !== getTodayDate()) return null;
+
+    // 兼容旧格式（单篇文章）
+    if (data.title) {
+      return {
+        title: data.title,
+        content: data.content,
+        sourceUrl: data.sourceUrl || '',
+        source: data.source || '',
+        sourceId: data.sourceId || ''
+      };
+    }
+
+    // 新格式：文章列表 + 当前索引
+    if (data.articles && data.articles.length > 0) {
+      var idx = data.currentIndex || 0;
+      if (idx >= data.articles.length) idx = 0;
+      return data.articles[idx];
+    }
+
+    return null;
   } catch (e) {
     return null;
   }
 }
 
-// 保存每日时评
-function saveDailyArticle(title, content, sourceUrl, source, sourceId) {
-  var article = {
+// 读取全部文章列表
+function getDailyArticles() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEYS.dailyArticle);
+    if (!raw) return [];
+    var data = JSON.parse(raw);
+    if (data.date !== getTodayDate()) return [];
+    if (data.articles) return data.articles;
+    // 兼容旧格式
+    if (data.title) {
+      return [{ title: data.title, content: data.content, sourceUrl: data.sourceUrl || '', source: data.source || '', sourceId: data.sourceId || '' }];
+    }
+    return [];
+  } catch (e) {
+    return [];
+  }
+}
+
+// 获取当前文章索引
+function getDailyArticleIndex() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEYS.dailyArticle);
+    if (!raw) return 0;
+    var data = JSON.parse(raw);
+    return data.currentIndex || 0;
+  } catch (e) {
+    return 0;
+  }
+}
+
+// 获取文章总数
+function getDailyArticleCount() {
+  return getDailyArticles().length;
+}
+
+// 切换到指定索引的文章
+function setDailyArticleIndex(index) {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEYS.dailyArticle);
+    if (!raw) return;
+    var data = JSON.parse(raw);
+    var total = (data.articles || []).length;
+    if (total === 0) return;
+    // 循环索引
+    var newIdx = ((index % total) + total) % total;
+    data.currentIndex = newIdx;
+    localStorage.setItem(STORAGE_KEYS.dailyArticle, JSON.stringify(data));
+  } catch (e) {
+    // ignore
+  }
+}
+
+// 下一篇
+function nextDailyArticle() {
+  var total = getDailyArticleCount();
+  if (total === 0) return null;
+  var cur = getDailyArticleIndex();
+  setDailyArticleIndex(cur + 1);
+  return getDailyArticle();
+}
+
+// 上一篇
+function prevDailyArticle() {
+  var total = getDailyArticleCount();
+  if (total === 0) return null;
+  var cur = getDailyArticleIndex();
+  setDailyArticleIndex(cur - 1);
+  return getDailyArticle();
+}
+
+// 保存文章列表
+function saveDailyArticles(articles, source, sourceId) {
+  var data = {
     date: getTodayDate(),
-    title: title,
-    content: content,
-    sourceUrl: sourceUrl || '',
+    articles: articles,
+    currentIndex: 0,
     source: source || '',
     sourceId: sourceId || '',
     generatedAt: new Date().toISOString()
   };
-  localStorage.setItem(STORAGE_KEYS.dailyArticle, JSON.stringify(article));
-  return article;
+  localStorage.setItem(STORAGE_KEYS.dailyArticle, JSON.stringify(data));
+  return data;
+}
+
+// 保存每日时评（兼容旧接口，供脚本使用）
+function saveDailyArticle(title, content, sourceUrl, source, sourceId) {
+  var articles = [{
+    title: title,
+    content: content,
+    sourceUrl: sourceUrl || '',
+    source: source || '',
+    sourceId: sourceId || ''
+  }];
+  return saveDailyArticles(articles, source, sourceId);
 }

@@ -169,11 +169,11 @@ function refreshArticleFromSource() {
   updateSourceChipStatus(source.id, 'fetching');
 
   fetchDailyArticleFromRSS(
-    function (err, article) {
+    function (err, articles) {
       btn.disabled = false;
       updateRefreshButtonText();
 
-      if (err) {
+      if (err || !articles || articles.length === 0) {
         updateSourceChipStatus(source.id, 'failed');
         showToast('获取失败，请尝试其他来源');
       } else {
@@ -181,8 +181,12 @@ function refreshArticleFromSource() {
         setTimeout(function () {
           updateSourceChipStatus(source.id, 'active');
         }, 1500);
-        showDailyArticle(article);
-        showToast('已更新：' + article.title.slice(0, 20) + '...');
+        // 显示当前索引的文章（默认第一篇）
+        var article = getDailyArticle();
+        if (article) {
+          showDailyArticle(article);
+          showToast('已获取 ' + articles.length + ' 篇文章');
+        }
       }
     },
     function (sourceId, status) {
@@ -258,6 +262,47 @@ function showDailyArticle(article) {
   } else if (badge) {
     badge.style.display = 'none';
   }
+
+  // 更新翻页按钮和计数
+  updateArticleNav();
+}
+
+// 更新文章翻页按钮状态
+function updateArticleNav() {
+  var total = getDailyArticleCount();
+  var cur = getDailyArticleIndex();
+
+  var navArea = document.getElementById('daily-article-nav');
+  var counter = document.getElementById('daily-article-counter');
+  var prevBtn = document.getElementById('btn-prev-article');
+  var nextBtn = document.getElementById('btn-next-article');
+
+  if (total > 1) {
+    if (navArea) navArea.style.display = 'flex';
+    if (counter) counter.textContent = (cur + 1) + ' / ' + total;
+    if (prevBtn) prevBtn.disabled = false;
+    if (nextBtn) nextBtn.disabled = false;
+  } else {
+    if (navArea) navArea.style.display = 'none';
+  }
+}
+
+// 上一篇按钮
+function goPrevArticle() {
+  var article = prevDailyArticle();
+  if (article) {
+    showDailyArticle(article);
+    showToast('已切换到上一篇');
+  }
+}
+
+// 下一篇按钮
+function goNextArticle() {
+  var article = nextDailyArticle();
+  if (article) {
+    showDailyArticle(article);
+    showToast('已切换到下一篇');
+  }
 }
 
 function showDailyEmpty() {
@@ -273,6 +318,16 @@ function showDailyEmpty() {
 // 刷新每日时评按钮（使用当前选中的来源）
 document.getElementById('btn-generate-daily').addEventListener('click', function () {
   refreshArticleFromSource();
+});
+
+// 上一篇按钮
+document.getElementById('btn-prev-article').addEventListener('click', function () {
+  goPrevArticle();
+});
+
+// 下一篇按钮
+document.getElementById('btn-next-article').addEventListener('click', function () {
+  goNextArticle();
 });
 
 // 存入金句按钮
