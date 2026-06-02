@@ -67,9 +67,15 @@
       <!-- 今日复习列表 -->
       <!-- 每日时评 -->
       <div class="section-header">📰 每日时评</div>
+      <!-- 文章来源选择器 -->
+      <div class="source-selector" id="source-selector">
+        <span class="source-selector-label">来源：</span>
+        <div class="source-chips" id="source-chips"></div>
+      </div>
       <div id="daily-article-area" class="daily-article-area">
         <div class="empty-hint" id="daily-empty">点击下方按钮，AI 为你生成今日申论评论文章</div>
         <div id="daily-article-card" class="daily-article-card" style="display:none;">
+          <div class="daily-article-source-badge" id="daily-source-badge"></div>
           <div class="daily-article-title" id="daily-title"></div>
           <div class="daily-article-source" id="daily-source"></div>
           <div class="daily-article-content" id="daily-content"></div>

@@ -87,7 +87,10 @@ function refreshHomeStats() {
 
 // 刷新每日时评显示
 function refreshDailyArticle() {
-  // 先看 localStorage 有没有今天的
+  // 先渲染来源选择器
+  renderSourceChips();
+
+  // 再看 localStorage 有没有今天的
   var cached = getDailyArticle();
   if (cached) {
     showDailyArticle(cached);
@@ -102,7 +105,7 @@ function refreshDailyArticle() {
     })
     .then(function (serverArticle) {
       if (serverArticle.date === getTodayDate()) {
-        saveDailyArticle(serverArticle.title, serverArticle.content, serverArticle.sourceUrl, serverArticle.source);
+        saveDailyArticle(serverArticle.title, serverArticle.content, serverArticle.sourceUrl, serverArticle.source, serverArticle.sourceId || '');
         showDailyArticle(serverArticle);
       } else {
         showDailyEmpty();
@@ -111,6 +114,105 @@ function refreshDailyArticle() {
     .catch(function () {
       showDailyEmpty();
     });
+}
+
+// 渲染文章来源选择器
+function renderSourceChips() {
+  var container = document.getElementById('source-chips');
+  if (!container) return;
+
+  var sources = getDailySources();
+  var html = '';
+  sources.forEach(function (src) {
+    var activeClass = src.id === currentDailySource ? ' active' : '';
+    html += '<span class="source-chip' + activeClass + '" data-source="' + src.id + '" title="' + src.desc + '">' + src.label + '</span>';
+  });
+  container.innerHTML = html;
+
+  // 绑定点击事件
+  container.querySelectorAll('.source-chip').forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      var sourceId = this.getAttribute('data-source');
+      setDailySource(sourceId);
+      // 更新选中样式
+      container.querySelectorAll('.source-chip').forEach(function (c) {
+        c.classList.remove('active', 'fetching', 'failed', 'done');
+        if (c.getAttribute('data-source') === sourceId) {
+          c.classList.add('active');
+        }
+      });
+      // 更新按钮文字
+      updateRefreshButtonText();
+      // 自动刷新
+      refreshArticleFromSource();
+    });
+  });
+}
+
+// 更新刷新按钮文字
+function updateRefreshButtonText() {
+  var btn = document.getElementById('btn-generate-daily');
+  if (!btn) return;
+  var src = getCurrentSource();
+  btn.textContent = '🔄 刷新今日时评（' + src.label + '）';
+}
+
+// 从当前来源刷新文章
+function refreshArticleFromSource() {
+  var btn = document.getElementById('btn-generate-daily');
+  var source = getCurrentSource();
+
+  btn.textContent = '⏳ 正在获取...';
+  btn.disabled = true;
+
+  // 更新来源 chip 状态
+  updateSourceChipStatus(source.id, 'fetching');
+
+  fetchDailyArticleFromRSS(
+    function (err, article) {
+      btn.disabled = false;
+      updateRefreshButtonText();
+
+      if (err) {
+        updateSourceChipStatus(source.id, 'failed');
+        showToast('获取失败，请尝试其他来源');
+      } else {
+        updateSourceChipStatus(source.id, 'done');
+        setTimeout(function () {
+          updateSourceChipStatus(source.id, 'active');
+        }, 1500);
+        showDailyArticle(article);
+        showToast('已更新：' + article.title.slice(0, 20) + '...');
+      }
+    },
+    function (sourceId, status) {
+      // 进度回调
+      if (status === 'fetching') {
+        updateSourceChipStatus(sourceId, 'fetching');
+      } else if (status === 'failed') {
+        updateSourceChipStatus(sourceId, 'failed');
+      } else if (status === 'fallback_local') {
+        // 所有来源失败，尝试本地缓存
+      } else if (status === 'ai_fallback') {
+        // 尝试 AI 生成
+      }
+    }
+  );
+}
+
+// 更新来源 chip 的显示状态
+function updateSourceChipStatus(sourceId, status) {
+  var chips = document.querySelectorAll('#source-chips .source-chip');
+  chips.forEach(function (chip) {
+    if (chip.getAttribute('data-source') === sourceId) {
+      chip.classList.remove('active', 'fetching', 'failed', 'done');
+      if (status === 'active') {
+        chip.classList.add('active');
+      } else if (status) {
+        chip.classList.add(status);
+      }
+    }
+  });
 }
 
 function showDailyArticle(article) {
@@ -136,30 +238,41 @@ function showDailyArticle(article) {
   } else {
     linkEl.style.display = 'none';
   }
+
+  // 显示来源徽章
+  var badge = document.getElementById('daily-source-badge');
+  if (badge && article.sourceId) {
+    var srcConfig = getSourceById(article.sourceId);
+    if (srcConfig) {
+      var badgeClass = article.sourceId.indexOf('xinhua') !== -1 ? 'xinhua' : 'people';
+      badge.className = 'daily-article-source-badge ' + badgeClass;
+      badge.textContent = '📌 ' + srcConfig.label;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+  } else if (badge && article.source) {
+    badge.className = 'daily-article-source-badge people';
+    badge.textContent = '📌 ' + article.source;
+    badge.style.display = 'inline-block';
+  } else if (badge) {
+    badge.style.display = 'none';
+  }
 }
 
 function showDailyEmpty() {
   document.getElementById('daily-empty').style.display = 'block';
   document.getElementById('daily-article-card').style.display = 'none';
   document.getElementById('btn-generate-daily').style.display = 'block';
+  // 确保来源选择器可见
+  var selector = document.getElementById('source-selector');
+  if (selector) selector.style.display = 'flex';
+  updateRefreshButtonText();
 }
 
-// 刷新每日时评按钮
+// 刷新每日时评按钮（使用当前选中的来源）
 document.getElementById('btn-generate-daily').addEventListener('click', function () {
-  var btn = document.getElementById('btn-generate-daily');
-  btn.textContent = '⏳ 正在从人民网获取...';
-  btn.disabled = true;
-
-  fetchDailyArticleFromRSS(function (err, article) {
-    btn.textContent = '🔄 刷新今日时评（人民网）';
-    btn.disabled = false;
-    if (err) {
-      showToast('获取失败，请稍后重试');
-    } else {
-      showDailyArticle(article);
-      showToast('已更新：' + article.title.slice(0, 20) + '...');
-    }
-  });
+  refreshArticleFromSource();
 });
 
 // 存入金句按钮

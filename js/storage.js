@@ -432,13 +432,14 @@ function getDailyArticle() {
 }
 
 // 保存每日时评
-function saveDailyArticle(title, content, sourceUrl, source) {
+function saveDailyArticle(title, content, sourceUrl, source, sourceId) {
   var article = {
     date: getTodayDate(),
     title: title,
     content: content,
     sourceUrl: sourceUrl || '',
     source: source || '',
+    sourceId: sourceId || '',
     generatedAt: new Date().toISOString()
   };
   localStorage.setItem(STORAGE_KEYS.dailyArticle, JSON.stringify(article));

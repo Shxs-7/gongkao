@@ -338,3 +338,54 @@
 - ✅ 数据导入/导出备份
 - ✅ 人民网搜索跳转
 - ✅ 移动端淡蓝色简洁 UI
+- ✅ 每日时评多文章来源（人民网观点/时政 + 新华网评论）
+
+---
+
+## 2026-06-01 — 每日时评多文章来源升级
+
+### ✅ 完成
+- 每日时评从单一来源升级为多文章来源：
+  - **人民网·观点**（opinion.people.com.cn 评论频道）
+  - **人民网·时政**（politics.people.com.cn 时政频道）
+  - **新华网·评论**（xinhuanet.com 评论频道）
+- 重构 `js/ai.js` — 每日时评模块：
+  - `DAILY_SOURCES[]` — 文章来源配置数组（id、label、rssUrl、sourceName、desc）
+  - `fetchFromSource(source, onDone)` — 从单个 RSS 源抓取文章（通过 rss2json API 代理 CORS）
+  - `fetchDailyArticleFromRSS(onDone, onProgress)` — 多源降级抓取：先试当前选中来源，失败自动试下一个
+  - `setDailySource(sourceId)` / `getCurrentSource()` / `getSourceById()` — 来源管理
+  - `getDailySources()` — 返回来源列表供 UI 渲染
+  - 增强 HTML 实体解码（`&rsquo;`, `&ldquo;`, `&mdash;` 等）
+  - 添加 15 秒超时（`AbortSignal.timeout`）
+  - 降级链：RSS 多源 → 本地 daily-article.json → AI 兜底
+- 更新 `js/app.js` — 来源选择交互：
+  - `renderSourceChips()` — 动态渲染来源芯片
+  - `updateRefreshButtonText()` — 按钮文字随来源切换
+  - `refreshArticleFromSource()` — 从当前来源刷新
+  - `updateSourceChipStatus()` — 芯片状态动画（fetching/failed/done/active）
+  - 点击来源芯片自动切换并刷新
+- 更新 `js/storage.js`：
+  - `saveDailyArticle()` 新增 `sourceId` 参数，保存来源标识
+- 更新 `index.html`：
+  - 新增 `#source-selector` 来源选择器区域（芯片 + 标签）
+  - 新增 `#daily-source-badge` 来源徽章（文章卡片内）
+- 更新 `css/style.css`：
+  - `.source-selector` / `.source-chip` — 圆角芯片样式
+  - `.source-chip.active` / `.fetching` / `.failed` / `.done` — 状态样式
+  - `@keyframes pulse-border` — 加载脉冲动画
+  - `.daily-article-source-badge` — 文章来源徽章（人民网橙 / 新华网蓝）
+
+### 用户操作流程
+1. 首页 → 看到来源选择器（[人民网·观点] [人民网·时政] [新华网·评论]）
+2. 点击任意来源芯片 → 自动切换 + 抓取最新时评
+3. 获取中：芯片闪烁橙色脉冲动画
+4. 成功：芯片变绿 ✓，文章卡片出现，显示来源徽章
+5. 失败：芯片变红 ✗，自动降级到下一个来源
+6. 全部失败 → 尝试本地缓存 → AI 兜底
+
+### 📋 待办
+- [ ] 第 7 步：联调测试完善
+- [ ] 第 8 步：部署上线
+
+### 🔧 下一步
+测试多来源切换和降级链，确保各来源正常抓取

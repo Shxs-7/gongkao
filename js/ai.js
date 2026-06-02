@@ -270,23 +270,70 @@ function saveAiAnswerToModule(content) {
 }
 
 /* ==============================================
-   每日时评
+   每日时评 — 多文章来源
    ============================================== */
 
-// 从 rss2json API 直接拉取人民网最新评论（浏览器端，有 CORS 支持）
-var PEOPLE_RSS_URL = 'http://www.people.com.cn/rss/opinion.xml';
-var RSS2JSON_API  = 'https://api.rss2json.com/v1/api.json?rss_url=';
+// 文章来源定义（官方时评 RSS）
+var DAILY_SOURCES = [
+  {
+    id: 'people_opinion',
+    label: '人民网·观点',
+    rssUrl: 'http://www.people.com.cn/rss/opinion.xml',
+    sourceName: '人民网',
+    desc: '人民网观点频道时评'
+  },
+  {
+    id: 'people_politics',
+    label: '人民网·时政',
+    rssUrl: 'http://politics.people.com.cn/rss/politics.xml',
+    sourceName: '人民网',
+    desc: '人民网时政频道'
+  },
+  {
+    id: 'xinhua_comments',
+    label: '新华网·评论',
+    rssUrl: 'http://www.xinhuanet.com/comments/rss.xml',
+    sourceName: '新华网',
+    desc: '新华网评论频道'
+  }
+];
 
-function fetchDailyArticleFromRSS(onDone) {
-  var apiUrl = RSS2JSON_API + encodeURIComponent(PEOPLE_RSS_URL);
+// 当前选中的来源
+var currentDailySource = 'people_opinion';
 
-  fetch(apiUrl)
+// rss2json API（代理 CORS）
+var RSS2JSON_API = 'https://api.rss2json.com/v1/api.json?rss_url=';
+
+// 切换当前来源
+function setDailySource(sourceId) {
+  var found = DAILY_SOURCES.filter(function (s) { return s.id === sourceId; });
+  if (found.length > 0) currentDailySource = sourceId;
+}
+
+// 获取当前来源配置
+function getCurrentSource() {
+  var found = DAILY_SOURCES.filter(function (s) { return s.id === currentDailySource; });
+  return found.length > 0 ? found[0] : DAILY_SOURCES[0];
+}
+
+// 根据 sourceId 获取来源配置
+function getSourceById(sourceId) {
+  var found = DAILY_SOURCES.filter(function (s) { return s.id === sourceId; });
+  return found.length > 0 ? found[0] : null;
+}
+
+// 从单个来源抓取文章
+function fetchFromSource(source, onDone) {
+  var apiUrl = RSS2JSON_API + encodeURIComponent(source.rssUrl);
+
+  fetch(apiUrl, { signal: AbortSignal.timeout(15000) })
     .then(function (res) {
       if (!res.ok) throw new Error('API_ERROR');
       return res.json();
     })
     .then(function (data) {
       if (data.items && data.items.length > 0) {
+        // 取最新一篇
         var latest = data.items[0];
         var content = (latest.content || latest.description || '')
           .replace(/<[^>]+>/g, '')
@@ -295,16 +342,51 @@ function fetchDailyArticleFromRSS(onDone) {
           .replace(/&lt;/g, '<')
           .replace(/&gt;/g, '>')
           .replace(/&quot;/g, '"')
+          .replace(/&rsquo;/g, "'")
+          .replace(/&lsquo;/g, "'")
+          .replace(/&rdquo;/g, '"')
+          .replace(/&ldquo;/g, '"')
+          .replace(/&mdash;/g, '—')
+          .replace(/&ndash;/g, '–')
+          .replace(/\n{3,}/g, '\n\n')
           .trim();
 
-        var article = saveDailyArticle(latest.title, content, latest.link, '人民网');
-        onDone(null, article);
+        var article = saveDailyArticle(
+          latest.title,
+          content,
+          latest.link || '',
+          source.sourceName,
+          source.id
+        );
+        onDone(null, article, source);
       } else {
-        onDone(new Error('NO_ARTICLE'), null);
+        onDone(new Error('NO_ARTICLE'), null, source);
       }
     })
-    .catch(function () {
-      // rss2json 失败，尝试本地缓存文件
+    .catch(function (err) {
+      onDone(err, null, source);
+    });
+}
+
+// 从当前选中的来源抓取，失败自动降级到其他来源
+// onProgress(sourceId, status) — 每个来源的尝试状态
+function fetchDailyArticleFromRSS(onDone, onProgress) {
+  var sources = DAILY_SOURCES.slice();
+
+  // 把当前选中的来源放到第一位
+  var currentSource = getCurrentSource();
+  sources.sort(function (a, b) {
+    if (a.id === currentSource.id) return -1;
+    if (b.id === currentSource.id) return 1;
+    return 0;
+  });
+
+  var idx = 0;
+
+  function tryNext() {
+    if (idx >= sources.length) {
+      // 所有来源都失败 → 尝试本地缓存
+      if (onProgress) onProgress('', 'fallback_local');
       fetch('/daily-article.json?' + Date.now())
         .then(function (res) {
           if (!res.ok) throw new Error('NOT_FOUND');
@@ -312,16 +394,36 @@ function fetchDailyArticleFromRSS(onDone) {
         })
         .then(function (data) {
           if (data.date === getTodayDate()) {
-            var article = saveDailyArticle(data.title, data.content, data.sourceUrl, data.source);
+            var article = saveDailyArticle(data.title, data.content, data.sourceUrl, data.source, data.sourceId || '');
             onDone(null, article);
           } else {
             onDone(new Error('EXPIRED'), null);
           }
         })
         .catch(function () {
-          onDone(new Error('FETCH_ERROR'), null);
+          onDone(new Error('ALL_FAILED'), null);
         });
+      return;
+    }
+
+    var source = sources[idx];
+    if (onProgress) onProgress(source.id, 'fetching');
+
+    fetchFromSource(source, function (err, article, src) {
+      if (!err && article) {
+        // 成功！
+        if (onProgress) onProgress(source.id, 'done');
+        onDone(null, article);
+      } else {
+        // 失败，试下一个
+        if (onProgress) onProgress(source.id, 'failed');
+        idx++;
+        tryNext();
+      }
     });
+  }
+
+  tryNext();
 }
 
 // AI 生成每日时评（兜底方案）
@@ -364,17 +466,23 @@ function generateDailyArticle(onStart, onDone) {
   .catch(function (err) { onDone(err, null); });
 }
 
-// 获取每日时评（先试 RSS，失败再用 AI）
-function loadDailyArticle(onDone) {
+// 获取每日时评（先试 RSS 多源，失败再用 AI 兜底）
+function loadDailyArticle(onDone, onProgress) {
   fetchDailyArticleFromRSS(function (err, article) {
     if (!err && article) {
       // RSS 抓取成功
       onDone(null, article);
     } else {
-      // RSS 失败，尝试 AI
+      // 全部来源失败，尝试 AI 生成
+      if (onProgress) onProgress('', 'ai_fallback');
       generateDailyArticle(null, function (aiErr, aiArticle) {
         onDone(aiErr, aiArticle);
       });
     }
-  });
+  }, onProgress);
+}
+
+// 返回来源列表（供 UI 渲染用）
+function getDailySources() {
+  return DAILY_SOURCES;
 }
