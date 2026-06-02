@@ -176,17 +176,18 @@ function refreshArticleFromSource() {
       if (err || !articles || articles.length === 0) {
         updateSourceChipStatus(source.id, 'failed');
         showToast('获取失败，请尝试其他来源');
+        resetRefreshBatchBtn();
       } else {
         updateSourceChipStatus(source.id, 'done');
         setTimeout(function () {
           updateSourceChipStatus(source.id, 'active');
         }, 1500);
-        // 显示当前索引的文章（默认第一篇）
         var article = getDailyArticle();
         if (article) {
           showDailyArticle(article);
           showToast('已获取 ' + articles.length + ' 篇文章');
         }
+        resetRefreshBatchBtn();
       }
     },
     function (sourceId, status) {
@@ -305,6 +306,15 @@ function goNextArticle() {
   }
 }
 
+// 恢复"换一组"按钮
+function resetRefreshBatchBtn() {
+  var btn = document.getElementById('btn-refresh-batch');
+  if (btn) {
+    btn.textContent = '🔄 换一组';
+    btn.disabled = false;
+  }
+}
+
 function showDailyEmpty() {
   document.getElementById('daily-empty').style.display = 'block';
   document.getElementById('daily-article-card').style.display = 'none';
@@ -328,6 +338,19 @@ document.getElementById('btn-prev-article').addEventListener('click', function (
 // 下一篇按钮
 document.getElementById('btn-next-article').addEventListener('click', function () {
   goNextArticle();
+});
+
+// 换一组按钮（重新从当前来源抓取）
+document.getElementById('btn-refresh-batch').addEventListener('click', function () {
+  var btn = this;
+  btn.textContent = '⏳ 抓取中...';
+  btn.disabled = true;
+  refreshArticleFromSource();
+  // refreshArticleFromSource 结束后不会恢复这个按钮状态，这里做个兜底
+  setTimeout(function () {
+    btn.textContent = '🔄 换一组';
+    btn.disabled = false;
+  }, 15000);
 });
 
 // 存入金句按钮
