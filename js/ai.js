@@ -343,7 +343,8 @@ function cleanArticleContent(raw) {
 
 // 从单个来源抓取文章列表（返回前 10 篇）
 function fetchFromSource(source, onDone) {
-  var apiUrl = RSS2JSON_API + encodeURIComponent(source.rssUrl);
+  // 加时间戳防止 API 缓存
+  var apiUrl = RSS2JSON_API + encodeURIComponent(source.rssUrl) + '&_t=' + Date.now();
 
   fetch(apiUrl, { signal: AbortSignal.timeout(15000) })
     .then(function (res) {
