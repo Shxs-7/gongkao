@@ -185,7 +185,8 @@ function refreshArticleFromSource() {
         var article = getDailyArticle();
         if (article) {
           showDailyArticle(article);
-          showToast('已获取 ' + articles.length + ' 篇文章');
+          var srcLabel = source.label || '';
+          showToast('来自' + srcLabel + '，共 ' + articles.length + ' 篇');
         }
         resetRefreshBatchBtn();
       }
@@ -340,13 +341,35 @@ document.getElementById('btn-next-article').addEventListener('click', function (
   goNextArticle();
 });
 
-// 换一组按钮（重新从当前来源抓取）
+// 换一组按钮（自动切换到下一个来源抓取）
 document.getElementById('btn-refresh-batch').addEventListener('click', function () {
   var btn = this;
   btn.textContent = '⏳ 抓取中...';
   btn.disabled = true;
+
+  // 切换到下一个来源
+  var sources = getDailySources();
+  var curId = currentDailySource;
+  var curIdx = -1;
+  for (var i = 0; i < sources.length; i++) {
+    if (sources[i].id === curId) { curIdx = i; break; }
+  }
+  var nextIdx = (curIdx + 1) % sources.length;
+  var nextSource = sources[nextIdx];
+  setDailySource(nextSource.id);
+
+  // 更新来源芯片选中态
+  document.querySelectorAll('#source-chips .source-chip').forEach(function (c) {
+    c.classList.remove('active', 'fetching', 'failed', 'done');
+    if (c.getAttribute('data-source') === nextSource.id) {
+      c.classList.add('active');
+    }
+  });
+  updateRefreshButtonText();
+
   refreshArticleFromSource();
-  // refreshArticleFromSource 结束后不会恢复这个按钮状态，这里做个兜底
+
+  // 兜底恢复按钮
   setTimeout(function () {
     btn.textContent = '🔄 换一组';
     btn.disabled = false;
