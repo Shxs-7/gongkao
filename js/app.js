@@ -141,20 +141,10 @@ function renderSourceChips() {
           c.classList.add('active');
         }
       });
-      // 更新按钮文字
-      updateRefreshButtonText();
       // 自动刷新
       refreshArticleFromSource();
     });
   });
-}
-
-// 更新刷新按钮文字
-function updateRefreshButtonText() {
-  var btn = document.getElementById('btn-generate-daily');
-  if (!btn) return;
-  var src = getCurrentSource();
-  btn.textContent = '🔄 刷新今日时评（' + src.label + '）';
 }
 
 // 从当前来源刷新文章
@@ -171,7 +161,6 @@ function refreshArticleFromSource() {
   fetchDailyArticleFromRSS(
     function (err, articles) {
       btn.disabled = false;
-      updateRefreshButtonText();
 
       if (err || !articles || articles.length === 0) {
         updateSourceChipStatus(source.id, 'failed');
@@ -262,47 +251,6 @@ function showDailyArticle(article) {
   } else if (badge) {
     badge.style.display = 'none';
   }
-
-  // 更新翻页按钮和计数
-  updateArticleNav();
-}
-
-// 更新文章翻页按钮状态
-function updateArticleNav() {
-  var total = getDailyArticleCount();
-  var cur = getDailyArticleIndex();
-
-  var navArea = document.getElementById('daily-article-nav');
-  var counter = document.getElementById('daily-article-counter');
-  var prevBtn = document.getElementById('btn-prev-article');
-  var nextBtn = document.getElementById('btn-next-article');
-
-  if (total > 1) {
-    if (navArea) navArea.style.display = 'flex';
-    if (counter) counter.textContent = (cur + 1) + ' / ' + total;
-    if (prevBtn) prevBtn.disabled = false;
-    if (nextBtn) nextBtn.disabled = false;
-  } else {
-    if (navArea) navArea.style.display = 'none';
-  }
-}
-
-// 上一篇按钮
-function goPrevArticle() {
-  var article = prevDailyArticle();
-  if (article) {
-    showDailyArticle(article);
-    showToast('已切换到上一篇');
-  }
-}
-
-// 下一篇按钮
-function goNextArticle() {
-  var article = nextDailyArticle();
-  if (article) {
-    showDailyArticle(article);
-    showToast('已切换到下一篇');
-  }
 }
 
 function showDailyEmpty() {
@@ -312,22 +260,11 @@ function showDailyEmpty() {
   // 确保来源选择器可见
   var selector = document.getElementById('source-selector');
   if (selector) selector.style.display = 'flex';
-  updateRefreshButtonText();
 }
 
 // 刷新每日时评按钮（使用当前选中的来源）
 document.getElementById('btn-generate-daily').addEventListener('click', function () {
   refreshArticleFromSource();
-});
-
-// 上一篇按钮
-document.getElementById('btn-prev-article').addEventListener('click', function () {
-  goPrevArticle();
-});
-
-// 下一篇按钮
-document.getElementById('btn-next-article').addEventListener('click', function () {
-  goNextArticle();
 });
 
 // 存入金句按钮
