@@ -176,7 +176,6 @@ function refreshArticleFromSource() {
       if (err || !articles || articles.length === 0) {
         updateSourceChipStatus(source.id, 'failed');
         showToast('获取失败，请尝试其他来源');
-        resetRefreshBatchBtn();
       } else {
         updateSourceChipStatus(source.id, 'done');
         setTimeout(function () {
@@ -188,7 +187,6 @@ function refreshArticleFromSource() {
           var srcLabel = source.label || '';
           showToast('来自' + srcLabel + '，共 ' + articles.length + ' 篇');
         }
-        resetRefreshBatchBtn();
       }
     },
     function (sourceId, status) {
@@ -307,15 +305,6 @@ function goNextArticle() {
   }
 }
 
-// 恢复"换一组"按钮
-function resetRefreshBatchBtn() {
-  var btn = document.getElementById('btn-refresh-batch');
-  if (btn) {
-    btn.textContent = '🔄 换一组';
-    btn.disabled = false;
-  }
-}
-
 function showDailyEmpty() {
   document.getElementById('daily-empty').style.display = 'block';
   document.getElementById('daily-article-card').style.display = 'none';
@@ -339,41 +328,6 @@ document.getElementById('btn-prev-article').addEventListener('click', function (
 // 下一篇按钮
 document.getElementById('btn-next-article').addEventListener('click', function () {
   goNextArticle();
-});
-
-// 换一组按钮（自动切换到下一个来源抓取）
-document.getElementById('btn-refresh-batch').addEventListener('click', function () {
-  var btn = this;
-  btn.textContent = '⏳ 抓取中...';
-  btn.disabled = true;
-
-  // 切换到下一个来源
-  var sources = getDailySources();
-  var curId = currentDailySource;
-  var curIdx = -1;
-  for (var i = 0; i < sources.length; i++) {
-    if (sources[i].id === curId) { curIdx = i; break; }
-  }
-  var nextIdx = (curIdx + 1) % sources.length;
-  var nextSource = sources[nextIdx];
-  setDailySource(nextSource.id);
-
-  // 更新来源芯片选中态
-  document.querySelectorAll('#source-chips .source-chip').forEach(function (c) {
-    c.classList.remove('active', 'fetching', 'failed', 'done');
-    if (c.getAttribute('data-source') === nextSource.id) {
-      c.classList.add('active');
-    }
-  });
-  updateRefreshButtonText();
-
-  refreshArticleFromSource();
-
-  // 兜底恢复按钮
-  setTimeout(function () {
-    btn.textContent = '🔄 换一组';
-    btn.disabled = false;
-  }, 15000);
 });
 
 // 存入金句按钮
