@@ -207,6 +207,18 @@ document.getElementById('chat-input').addEventListener('keydown', function (e) {
   }
 });
 
+// 联网搜索开关
+document.getElementById('btn-web-search').addEventListener('click', function () {
+  webSearchEnabled = !webSearchEnabled;
+  if (webSearchEnabled) {
+    this.classList.add('active');
+    this.title = '联网搜索已开启';
+  } else {
+    this.classList.remove('active');
+    this.title = '联网搜索已关闭';
+  }
+});
+
 /* ==============================================
    间隔重复 — 复习流程
    ============================================== */
