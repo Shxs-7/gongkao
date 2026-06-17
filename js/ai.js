@@ -6,8 +6,8 @@
 /* === API 配置 === */
 var AI_CONFIG = {
   apiUrl: 'https://api.deepseek.com/v1/chat/completions',
-  model: 'deepseek-chat',
-  maxTokens: 2000,
+  model: 'deepseek-v4-pro',
+  maxTokens: 4000,
   temperature: 0.7
 };
 
