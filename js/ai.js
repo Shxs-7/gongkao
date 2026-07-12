@@ -97,11 +97,6 @@ function callDeepSeek(userMessage, onStart, onDone) {
     stream: false
   };
 
-  // 启用联网搜索
-  if (webSearchEnabled) {
-    body.tools = [{ type: 'web_search', web_search: { enable: true } }];
-  }
-
   // 发起请求
   fetch(AI_CONFIG.apiUrl, {
     method: 'POST',
