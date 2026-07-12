@@ -6,7 +6,7 @@
 /* === API 配置 === */
 var AI_CONFIG = {
   apiUrl: 'https://api.deepseek.com/v1/chat/completions',
-  model: 'deepseek-chat',
+  model: 'deepseek-v4-flash',
   maxTokens: 2000,
   temperature: 0.7
 };
@@ -96,6 +96,11 @@ function callDeepSeek(userMessage, onStart, onDone) {
     temperature: AI_CONFIG.temperature,
     stream: false
   };
+
+  // 联网搜索（V4模型支持）
+  if (webSearchEnabled) {
+    body.enable_web_search = true;
+  }
 
   // 发起请求
   fetch(AI_CONFIG.apiUrl, {
