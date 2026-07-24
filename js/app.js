@@ -91,20 +91,37 @@ function checkBackupReminder() {
   if (days === -1) {
     // 从未备份过
     banner.style.display = 'block';
-    banner.innerHTML = '⚠️ 你还没有备份过数据，建议<a id="go-backup" style="color:var(--primary);font-weight:600;">立即备份</a>';
-  } else if (days >= 7) {
-    // 超过7天
+    banner.innerHTML = '⚠️ 还没有备份过数据 &nbsp;<button id="btn-backup-now" style="background:var(--primary);color:#fff;border:none;padding:4px 12px;border-radius:12px;font-size:12px;cursor:pointer;">📥 立即备份</button>';
+  } else if (days >= 3) {
+    // 超过3天未备份
     banner.style.display = 'block';
-    banner.innerHTML = '⚠️ 已 ' + days + ' 天未备份，建议<a id="go-backup" style="color:var(--primary);font-weight:600;">立即备份</a>';
+    banner.innerHTML = '⚠️ 已 ' + days + ' 天未备份 &nbsp;<button id="btn-backup-now" style="background:var(--primary);color:#fff;border:none;padding:4px 12px;border-radius:12px;font-size:12px;cursor:pointer;">📥 立即备份</button>';
+  } else if (days >= 1) {
+    // 1-2天，轻提醒
+    banner.style.display = 'block';
+    banner.style.background = '#E8F5E9';
+    banner.style.border = '1px solid #4CAF50';
+    banner.style.color = '#2E7D32';
+    banner.innerHTML = '✅ 上次备份：' + getLastBackupText() + ' &nbsp;<button id="btn-backup-now" style="background:#4CAF50;color:#fff;border:none;padding:4px 12px;border-radius:12px;font-size:12px;cursor:pointer;">📥 再次备份</button>';
   } else {
-    banner.style.display = 'none';
+    // 今天已备份
+    banner.style.display = 'block';
+    banner.style.background = '#E8F5E9';
+    banner.style.border = '1px solid #4CAF50';
+    banner.style.color = '#2E7D32';
+    banner.innerHTML = '✅ 今日已自动备份 &nbsp;💾';
   }
 
-  // 点击跳转到设置页
-  var link = document.getElementById('go-backup');
-  if (link) {
-    link.addEventListener('click', function () {
-      switchPage('settings');
+  // 点击立即备份按钮
+  var btn = document.getElementById('btn-backup-now');
+  if (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      triggerBackupDownload();
+      recordBackup();
+      showToast('✅ 备份完成！文件已保存到手机');
+      // 刷新提醒状态
+      setTimeout(checkBackupReminder, 500);
     });
   }
 }
@@ -361,6 +378,47 @@ function renderTodayReviewList() {
 }
 
 /* ==============================================
+   自动备份
+   ============================================== */
+
+// 触发备份文件下载（供手动导出和自动备份共用）
+function triggerBackupDownload() {
+  var jsonStr = exportAll();
+  var blob = new Blob([jsonStr], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = '公考积累宝_备份_' + getTodayDate() + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// 执行自动备份（页面加载时调用）
+function performAutoBackup() {
+  if (!shouldAutoBackup()) return;
+
+  var settings = getSettings();
+  var isFirstBackup = !settings.lastBackupDate;
+
+  // 短暂延迟，等页面渲染完
+  setTimeout(function () {
+    try {
+      triggerBackupDownload();
+      recordBackup();
+      var msg = isFirstBackup
+        ? '📦 首次自动备份完成！文件已保存到手机'
+        : '📦 每日自动备份完成！文件已保存到手机';
+      showToast(msg);
+    } catch (e) {
+      // 如果浏览器阻止了自动下载，静默失败，banner 会提醒用户手动备份
+      console.log('自动备份下载被浏览器阻止，将通过提醒引导手动备份');
+    }
+  }, 800);
+}
+
+/* ==============================================
    设置页
    ============================================== */
 
@@ -368,6 +426,19 @@ function renderTodayReviewList() {
 function initSettings() {
   var settings = getSettings();
   document.getElementById('setting-apikey').value = settings.apiKey || '';
+
+  // 自动备份开关状态
+  var autoBackupEnabled = settings.autoBackupEnabled !== false; // 默认开启
+  var toggleCheckbox = document.getElementById('setting-autobackup');
+  if (toggleCheckbox) {
+    toggleCheckbox.checked = autoBackupEnabled;
+  }
+
+  // 上次备份时间
+  var lastBackupEl = document.getElementById('last-backup-time');
+  if (lastBackupEl) {
+    lastBackupEl.textContent = '上次备份：' + getLastBackupText();
+  }
 
   // 显示存储占用
   var bytes = getStorageSize();
@@ -393,18 +464,12 @@ document.getElementById('btn-save-apikey').addEventListener('click', function ()
 
 // 导出数据
 document.getElementById('btn-export').addEventListener('click', function () {
-  var jsonStr = exportAll();
-  var blob = new Blob([jsonStr], { type: 'application/json' });
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url;
-  a.download = '公考积累宝_备份_' + getTodayDate() + '.json';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  triggerBackupDownload();
   recordBackup(); // 记录本次备份时间
-  showToast('数据已导出');
+  showToast('✅ 数据已备份到手机文件');
+  // 刷新设置页备份时间
+  var lastBackupEl = document.getElementById('last-backup-time');
+  if (lastBackupEl) lastBackupEl.textContent = '上次备份：今天';
 });
 
 // 导入数据 — 点击按钮触发文件选择
@@ -453,6 +518,15 @@ document.getElementById('btn-clear').addEventListener('click', function () {
   }, '确认清空');
 });
 
+// 自动备份开关
+var autoBackupToggle = document.getElementById('setting-autobackup');
+if (autoBackupToggle) {
+  autoBackupToggle.addEventListener('change', function () {
+    setAutoBackupEnabled(this.checked);
+    showToast(this.checked ? '✅ 每日自动备份已开启' : '⏸ 每日自动备份已关闭');
+  });
+}
+
 /* ==============================================
    页面加载完成
    ============================================== */
@@ -462,4 +536,6 @@ document.addEventListener('DOMContentLoaded', function () {
   currentSubModule = 'idioms';
   refreshHomeStats();
   switchPage('home');
+  // 每日自动备份（如已开启且今天未备份）
+  performAutoBackup();
 });

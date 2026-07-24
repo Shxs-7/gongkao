@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>公考积累宝</title>
-  <link rel="stylesheet" href="css/style.css?v=11">
+  <link rel="stylesheet" href="css/style.css?v=12">
 </head>
 <body>
 
@@ -164,6 +164,17 @@
       <!-- 数据管理 -->
       <div class="settings-group">
         <div class="settings-group-title">数据管理</div>
+        <div class="settings-item" style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-size:14px;font-weight:500;">📅 每日自动备份</div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">打开App时自动备份数据到手机文件</div>
+            <div id="last-backup-time" style="font-size:11px;color:var(--text-placeholder);margin-top:2px;">上次备份：--</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="setting-autobackup" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
         <div class="settings-item">
           <button class="btn btn-outline btn-block" id="btn-preset-idioms">📥 一键导入高频成语（25条）</button>
         </div>
@@ -246,12 +257,12 @@
 <!-- Toast 提示 -->
 <div id="toast" class="toast" style="display:none;"></div>
 
-<script src="js/presets.js?v=11"></script>
-<script src="js/storage.js?v=11"></script>
-<script src="js/review.js?v=11"></script>
-<script src="js/ai.js?v=11"></script>
-<script src="js/ui.js?v=11"></script>
-<script src="js/app.js?v=11"></script>
+<script src="js/presets.js?v=12"></script>
+<script src="js/storage.js?v=12"></script>
+<script src="js/review.js?v=12"></script>
+<script src="js/ai.js?v=12"></script>
+<script src="js/ui.js?v=12"></script>
+<script src="js/app.js?v=12"></script>
 
 </body>
 </html>

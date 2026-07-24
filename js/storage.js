@@ -373,6 +373,30 @@ function getDaysSinceLastBackup() {
   return Math.floor(diffMs / (1000 * 60 * 60 * 24));
 }
 
+// 检查是否应该自动备份（开启自动备份 + 今天还没备份过）
+function shouldAutoBackup() {
+  var settings = getSettings();
+  // 默认开启自动备份
+  if (settings.autoBackupEnabled === false) return false;
+  var lastDate = settings.lastBackupDate;
+  if (!lastDate) return true; // 从未备份过
+  return lastDate !== getTodayDate();
+}
+
+// 获取上次备份时间的可读文本
+function getLastBackupText() {
+  var days = getDaysSinceLastBackup();
+  if (days === -1) return '从未备份';
+  if (days === 0) return '今天';
+  if (days === 1) return '昨天';
+  return days + '天前';
+}
+
+// 切换自动备份开关
+function setAutoBackupEnabled(enabled) {
+  saveSettings({ autoBackupEnabled: enabled });
+}
+
 /* ==============================================
    对话历史管理
    ============================================== */
