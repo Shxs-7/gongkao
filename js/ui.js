@@ -32,7 +32,7 @@ function formatTime(isoStr) {
 /* === 各模块搜索字段 === */
 function getSearchFields(module) {
   switch (module) {
-    case 'idioms':    return ['text', 'meaning', 'examUsage'];
+    case 'idioms':    return ['text', 'meaning', 'examUsage', 'partOfSpeech', 'usageBias', 'synonyms', 'antonyms', 'extended'];
     case 'knowledge': return ['title', 'content'];
     case 'words':     return ['word', 'meaning', 'usage'];
     case 'quotes':    return ['text', 'source', 'usage'];
@@ -54,7 +54,7 @@ function getItemTitle(item, module) {
 /* === 获取卡片预览 === */
 function getItemPreview(item, module) {
   switch (module) {
-    case 'idioms':    return item.meaning || '';
+    case 'idioms':    return item.meaning || item.examUsage || '';
     case 'knowledge': return (item.content || '').slice(0, 80);
     case 'words':     return item.meaning || '';
     case 'quotes':    return item.source || item.usage || '';
@@ -119,8 +119,13 @@ function getFormLabels(module) {
         moduleLabel: '成语',
         fields: [
           { key: 'text', label: '成语', placeholder: '如：推心置腹', type: 'text' },
-          { key: 'meaning', label: '释义', placeholder: '成语的含义解释...', type: 'textarea' },
-          { key: 'examUsage', label: '真题考法', placeholder: '如：2019年国考行测与"开诚布公"做近义词辨析...', type: 'textarea' }
+          { key: 'partOfSpeech', label: '词性', placeholder: '如：动词/褒义词/中性词...', type: 'text' },
+          { key: 'meaning', label: '意思', placeholder: '成语的字面释义和深层含义...', type: 'textarea' },
+          { key: 'usageBias', label: '用法偏向', placeholder: '在真题中的实际用法偏向，如：多用于否定句/多修饰抽象事物/侧重过程...', type: 'textarea' },
+          { key: 'synonyms', label: '近义词', placeholder: '如：开诚布公、肝胆相照、赤诚相见', type: 'text' },
+          { key: 'antonyms', label: '反义词', placeholder: '如：尔虞我诈、勾心斗角', type: 'text' },
+          { key: 'examUsage', label: '真题考法', placeholder: '如：2019年国考行测与"开诚布公"做近义词辨析...', type: 'textarea' },
+          { key: 'extended', label: '拓展', placeholder: '如：出处典故、相关文化常识、背景知识...', type: 'textarea' }
         ]
       };
     case 'knowledge':

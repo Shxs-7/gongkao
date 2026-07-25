@@ -190,7 +190,13 @@ function getReviewContent(item, module) {
   var content = '';
   switch (module) {
     case 'idioms':
-      content = (item.examUsage || '') + '\n\n' + (item.meaning || '');
+      if (item.partOfSpeech) content += '【词性】' + item.partOfSpeech + '\n';
+      if (item.meaning) content += '【意思】' + item.meaning + '\n';
+      if (item.usageBias) content += '【用法偏向】' + item.usageBias + '\n';
+      if (item.synonyms) content += '【近义词】' + item.synonyms + '\n';
+      if (item.antonyms) content += '【反义词】' + item.antonyms + '\n';
+      if (item.examUsage) content += '【真题考法】' + item.examUsage + '\n';
+      if (item.extended) content += '【拓展】' + item.extended;
       break;
     case 'knowledge':
       content = item.content || '';
