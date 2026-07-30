@@ -49,6 +49,12 @@ var SYSTEM_PROMPT =
   '【出处】xxx\n' +
   '【适用场景】xxx\n' +
   '\n' +
+  '【固定搭配】\n' +
+  '【固定搭配】xxx\n' +
+  '【释义】xxx\n' +
+  '【用法示例】xxx（在句子中的实际用法、常见语境）\n' +
+  '【考查要点】xxx（行测逻辑填空中的高频考点、常见命题陷阱、相近搭配辨析）\n' +
+  '\n' +
   '## 回答要求\n' +
   '- 分点作答、层次清晰，适合手机屏幕阅读\n' +
   '- 涉及成语时严格按上述成语格式完整输出，8个字段都要覆盖\n' +
@@ -216,6 +222,18 @@ function parseAiContent(content, module) {
         '用法': 'usage'
       };
       break;
+    case 'collocations':
+      tagMap = {
+        '固定搭配': 'text',
+        '搭配': 'text',
+        '释义': 'meaning',
+        '意思': 'meaning',
+        '用法示例': 'usage',
+        '用法': 'usage',
+        '考查要点': 'examPoint',
+        '考点': 'examPoint'
+      };
+      break;
   }
 
   // 匹配【xxx】内容 或 【xxx】: 内容 或 xxx：内容
@@ -256,11 +274,12 @@ function parseAiContent(content, module) {
 // 获取某个模块的第一个字段名（作为兜底内容的填充目标）
 function getPrimaryFieldKey(module) {
   switch (module) {
-    case 'idioms':    return 'meaning';
-    case 'knowledge': return 'content';
-    case 'words':     return 'meaning';
-    case 'quotes':    return 'text';
-    default:          return null;
+    case 'idioms':       return 'meaning';
+    case 'knowledge':    return 'content';
+    case 'words':        return 'meaning';
+    case 'quotes':       return 'text';
+    case 'collocations': return 'meaning';
+    default:             return null;
   }
 }
 

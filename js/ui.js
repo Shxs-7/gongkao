@@ -32,33 +32,36 @@ function formatTime(isoStr) {
 /* === 各模块搜索字段 === */
 function getSearchFields(module) {
   switch (module) {
-    case 'idioms':    return ['text', 'meaning', 'examUsage', 'partOfSpeech', 'usageBias', 'synonyms', 'antonyms', 'extended'];
-    case 'knowledge': return ['title', 'content'];
-    case 'words':     return ['word', 'meaning', 'usage'];
-    case 'quotes':    return ['text', 'source', 'usage'];
-    default:          return [];
+    case 'idioms':       return ['text', 'meaning', 'examUsage', 'partOfSpeech', 'usageBias', 'synonyms', 'antonyms', 'extended'];
+    case 'knowledge':    return ['title', 'content'];
+    case 'words':        return ['word', 'meaning', 'usage'];
+    case 'quotes':       return ['text', 'source', 'usage'];
+    case 'collocations': return ['text', 'meaning', 'usage', 'examPoint'];
+    default:             return [];
   }
 }
 
 /* === 获取卡片标题 === */
 function getItemTitle(item, module) {
   switch (module) {
-    case 'idioms':    return item.text || '（无成语）';
-    case 'knowledge': return item.title || '（无标题）';
-    case 'words':     return item.word || '（无实词）';
-    case 'quotes':    return (item.text || '（无内容）').slice(0, 40);
-    default:          return '未知';
+    case 'idioms':       return item.text || '（无成语）';
+    case 'knowledge':    return item.title || '（无标题）';
+    case 'words':        return item.word || '（无实词）';
+    case 'quotes':       return (item.text || '（无内容）').slice(0, 40);
+    case 'collocations': return item.text || '（无搭配）';
+    default:             return '未知';
   }
 }
 
 /* === 获取卡片预览 === */
 function getItemPreview(item, module) {
   switch (module) {
-    case 'idioms':    return item.meaning || item.examUsage || '';
-    case 'knowledge': return (item.content || '').slice(0, 80);
-    case 'words':     return item.meaning || '';
-    case 'quotes':    return item.source || item.usage || '';
-    default:          return '';
+    case 'idioms':       return item.meaning || item.examUsage || '';
+    case 'knowledge':    return (item.content || '').slice(0, 80);
+    case 'words':        return item.meaning || '';
+    case 'quotes':       return item.source || item.usage || '';
+    case 'collocations': return item.meaning || item.usage || '';
+    default:             return '';
   }
 }
 
@@ -144,6 +147,16 @@ function getFormLabels(module) {
           { key: 'word', label: '实词', placeholder: '如：推脱', type: 'text' },
           { key: 'meaning', label: '释义', placeholder: '实词的含义...', type: 'textarea' },
           { key: 'usage', label: '用法 / 辨析', placeholder: '如：推脱侧重推卸摆脱；推托侧重找借口拒绝...', type: 'textarea' }
+        ]
+      };
+    case 'collocations':
+      return {
+        moduleLabel: '固定搭配',
+        fields: [
+          { key: 'text', label: '固定搭配', placeholder: '如：归根结底、迄今为止、不可或缺', type: 'text' },
+          { key: 'meaning', label: '释义', placeholder: '搭配的含义解释...', type: 'textarea' },
+          { key: 'usage', label: '用法示例', placeholder: '如在句子中的实际用法、常见语境...', type: 'textarea' },
+          { key: 'examPoint', label: '考查要点', placeholder: '如：行测逻辑填空高频考点、易混淆搭配辨析...', type: 'textarea' }
         ]
       };
     case 'quotes':
@@ -348,6 +361,7 @@ function showModuleSelect(onSelect) {
         '<button class="module-select-item" data-mod="knowledge">📚 常识</button>' +
         '<button class="module-select-item" data-mod="words">🔤 实词</button>' +
         '<button class="module-select-item" data-mod="quotes">⭐ 金句</button>' +
+        '<button class="module-select-item" data-mod="collocations">🔗 固定搭配</button>' +
       '</div>' +
       '<button class="module-select-cancel" id="module-select-cancel">取消</button>' +
     '</div></div>';

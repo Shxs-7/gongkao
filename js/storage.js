@@ -6,20 +6,22 @@
 
 /* === 存储键名常量 === */
 var STORAGE_KEYS = {
-  idioms:      'gka_idioms',       // 成语
-  knowledge:   'gka_knowledge',    // 常识
-  words:       'gka_words',        // 实词
-  quotes:      'gka_quotes',       // 金句
-  settings:    'gka_settings',     // 用户设置
-  chatHistory: 'gka_chat_history'  // AI 对话历史
+  idioms:       'gka_idioms',        // 成语
+  knowledge:    'gka_knowledge',     // 常识
+  words:        'gka_words',         // 实词
+  quotes:       'gka_quotes',        // 金句
+  collocations: 'gka_collocations',  // 固定搭配
+  settings:     'gka_settings',      // 用户设置
+  chatHistory:  'gka_chat_history'   // AI 对话历史
 };
 
 /* === 模块名称映射 === */
 var MODULE_LABELS = {
-  idioms:    '成语',
-  knowledge: '常识',
-  words:     '实词',
-  quotes:    '金句'
+  idioms:       '成语',
+  knowledge:    '常识',
+  words:        '实词',
+  quotes:       '金句',
+  collocations: '固定搭配'
 };
 
 /* === ID 生成 === */
@@ -89,7 +91,8 @@ function addItem(module, data) {
   base.id = generateId(module === 'knowledge' ? 'knowledge' :
               module === 'idioms' ? 'idiom' :
               module === 'words' ? 'word' :
-              module === 'quotes' ? 'quote' : 'item');
+              module === 'quotes' ? 'quote' :
+              module === 'collocations' ? 'collo' : 'item');
   var item = Object.assign({}, base, data);
 
   var list = getAll(module);
@@ -170,27 +173,29 @@ function searchItems(module, keyword, fields) {
 // 获取各模块数据条数
 function getStats() {
   return {
-    idioms:    getAll('idioms').length,
-    knowledge: getAll('knowledge').length,
-    words:     getAll('words').length,
-    quotes:    getAll('quotes').length
+    idioms:       getAll('idioms').length,
+    knowledge:    getAll('knowledge').length,
+    words:        getAll('words').length,
+    quotes:       getAll('quotes').length,
+    collocations: getAll('collocations').length
   };
 }
 
 // 获取总条数
 function getTotalCount() {
   var stats = getStats();
-  return stats.idioms + stats.knowledge + stats.words + stats.quotes;
+  return stats.idioms + stats.knowledge + stats.words + stats.quotes + stats.collocations;
 }
 
 // 获取各模块的去重字段
 function getDedupField(module) {
   switch (module) {
-    case 'idioms':    return 'text';
-    case 'knowledge': return 'title';
-    case 'words':     return 'word';
-    case 'quotes':    return 'text';
-    default:          return null;
+    case 'idioms':       return 'text';
+    case 'knowledge':    return 'title';
+    case 'words':        return 'word';
+    case 'quotes':       return 'text';
+    case 'collocations': return 'text';
+    default:             return null;
   }
 }
 
@@ -236,12 +241,13 @@ function exportAll() {
   var data = {
     version: '1.0',
     exportedAt: new Date().toISOString(),
-    idioms:    getAll('idioms'),
-    knowledge: getAll('knowledge'),
-    words:     getAll('words'),
-    quotes:    getAll('quotes'),
-    settings:  getSettings(),
-    chatHistory: getChatHistory()
+    idioms:       getAll('idioms'),
+    knowledge:    getAll('knowledge'),
+    words:        getAll('words'),
+    quotes:       getAll('quotes'),
+    collocations: getAll('collocations'),
+    settings:     getSettings(),
+    chatHistory:  getChatHistory()
   };
   return JSON.stringify(data, null, 2);
 }
@@ -277,6 +283,10 @@ function importAll(jsonStr, merge) {
         var existing = getAll('quotes');
         saveList('quotes', mergeLists(existing, data.quotes));
       }
+      if (data.collocations && data.collocations.length) {
+        var existing = getAll('collocations');
+        saveList('collocations', mergeLists(existing, data.collocations));
+      }
       if (data.settings) {
         saveSettings(data.settings);
       }
@@ -289,6 +299,7 @@ function importAll(jsonStr, merge) {
       saveList('knowledge', data.knowledge || []);
       saveList('words', data.words || []);
       saveList('quotes', data.quotes || []);
+      saveList('collocations', data.collocations || []);
       saveSettings(data.settings || {});
       saveChatHistory(data.chatHistory || []);
     }
@@ -296,7 +307,8 @@ function importAll(jsonStr, merge) {
     var total = (data.idioms ? data.idioms.length : 0) +
                 (data.knowledge ? data.knowledge.length : 0) +
                 (data.words ? data.words.length : 0) +
-                (data.quotes ? data.quotes.length : 0);
+                (data.quotes ? data.quotes.length : 0) +
+                (data.collocations ? data.collocations.length : 0);
 
     return { success: true, message: '成功导入 ' + total + ' 条数据' };
   } catch (e) {

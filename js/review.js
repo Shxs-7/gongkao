@@ -17,7 +17,7 @@ var REVIEW_PARAMS = {
    ============================================== */
 
 function getTodayReviews() {
-  var modules = ['idioms', 'knowledge', 'words', 'quotes'];
+  var modules = ['idioms', 'knowledge', 'words', 'quotes', 'collocations'];
   var today = getTodayDate();
   var allItems = [];
 
@@ -207,6 +207,11 @@ function getReviewContent(item, module) {
       break;
     case 'quotes':
       content = (item.source ? '出处：' + item.source + '\n\n' : '') + (item.usage || '');
+      break;
+    case 'collocations':
+      if (item.meaning) content += '【释义】' + item.meaning + '\n';
+      if (item.usage) content += '【用法示例】' + item.usage + '\n';
+      if (item.examPoint) content += '【考查要点】' + item.examPoint;
       break;
   }
   return content.trim();

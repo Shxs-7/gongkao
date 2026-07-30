@@ -69,6 +69,7 @@ function refreshHomeStats() {
   document.getElementById('stat-knowledge').textContent = stats.knowledge;
   document.getElementById('stat-words').textContent = stats.words;
   document.getElementById('stat-quotes').textContent = stats.quotes;
+  document.getElementById('stat-collocations').textContent = stats.collocations;
   document.getElementById('total-count').textContent = getTotalCount();
 
   // 今日待复习数

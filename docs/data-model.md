@@ -138,9 +138,38 @@
 }
 ```
 
+```
+
 ---
 
-## 六、用户设置 (Settings)
+## 六、固定搭配 (Collocation)
+
+**localStorage 键**: `gka_collocations`  
+**存储格式**: JSON 数组
+
+```js
+{
+  // 通用字段
+  id: "collo_1717160000004_e7j2q6",
+  createdAt: "2026-05-31T12:00:00.000Z",
+  updatedAt: "2026-05-31T12:00:00.000Z",
+  reviewCount: 0,
+  reviewEase: 2.5,
+  reviewInterval: 0,
+  reviewNext: null,
+  reviewHistory: [],
+
+  // 专属字段
+  text: "不可或缺",              // 固定搭配（必填）
+  meaning: "不可有一点点缺失，形容绝对需要。",  // 释义（必填）
+  usage: "常与'组成部分''条件'等词连用，如：人才是城市发展不可或缺的力量。",  // 用法示例（选填）
+  examPoint: "行测逻辑填空高频考点：与'必不可少'为近义替换，但'不可或缺'更书面。"  // 考查要点（选填）
+}
+```
+
+---
+
+## 七、用户设置 (Settings)
 
 **localStorage 键**: `gka_settings`  
 **存储格式**: JSON 对象
@@ -155,7 +184,7 @@
 
 ---
 
-## 七、AI 对话历史 (Chat History)
+## 八、AI 对话历史 (Chat History)
 
 **localStorage 键**: `gka_chat_history`  
 **存储格式**: JSON 数组，仅保留最近 100 条
@@ -179,7 +208,7 @@
 
 ---
 
-## 八、ID 生成规则
+## 九、ID 生成规则
 
 ```
 格式: <type>_<timestamp>_<random6>
